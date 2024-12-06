@@ -1,6 +1,9 @@
 package main
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"github.com/gorilla/websocket"
+)
 
 type Message struct {
 	Type byte
@@ -14,12 +17,12 @@ const (
 	PositionUpdate             = 1
 )
 
-func broadcastToPlayer(client *client, messageType MessageType, message []byte) {
+func sendMessageToClient(connection *websocket.Conn, messageType MessageType, message []byte) {
 	var resultingMessage, _ = json.Marshal(Message{
 		Type: byte(messageType),
 		Msg:  message,
 	})
-	err := client.connection.WriteMessage(1, resultingMessage)
+	err := connection.WriteMessage(1, resultingMessage)
 	if err != nil {
 		println("Error when sending message to user")
 	}

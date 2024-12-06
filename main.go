@@ -111,7 +111,7 @@ func gameLoop() {
 			}
 			if isOutsideLevel(&clients[i]) || level[clients[i].x][clients[i].y] == 1 {
 				clients[i].alive = false
-				broadcastToPlayer(&clients[i], TextMessage, []byte("you ded"))
+				sendMessageToClient(clients[i].connection, TextMessage, []byte("you ded"))
 			} else {
 				level[clients[i].x][clients[i].y] = 1
 				clientPositions = append(clientPositions, PlayerPosition{clients[i].x, clients[i].y})
@@ -132,6 +132,6 @@ func isOutsideLevel(client *client) bool {
 func broadcastToPlayers(positions []PlayerPosition) {
 	for i := 0; i < len(clients); i++ {
 		var lol, _ = json.Marshal(positions)
-		broadcastToPlayer(&clients[i], PositionUpdate, lol)
+		sendMessageToClient(clients[i].connection, PositionUpdate, lol)
 	}
 }
