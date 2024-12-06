@@ -33,7 +33,10 @@ type clientMessage struct {
 	Y int
 }
 
-var level = [320][240]int{}
+const levelWidth = 320
+const levelHeight = 240
+
+var level = [levelWidth][levelHeight]int{}
 var clients = make([]client, 0)
 var gameRunning = false
 
@@ -107,12 +110,12 @@ func gameLoop() {
 				println("right")
 				clients[i].x++
 			}
-			if level[clients[i].x][clients[i].y] == 1 {
+			if isOutsideLevel(&clients[i]) || level[clients[i].x][clients[i].y] == 1 {
 				clients[i].alive = false
 			}
 			level[clients[i].x][clients[i].y] = 1
 			clientPositions = append(clientPositions, clientMessage{clients[i].x, clients[i].y})
-
+			broadCastToPlayers(clientPositions)
 			// TODO: Send stuff as bytes instead of json strings
 			//var result = "{\"x\":" + strconv.Itoa(clients[i].x) + ",\"y\":" + strconv.Itoa(clients[i].y) + "}"
 			//	var result = clientMessage{clients[i].x, clients[i].y}
@@ -120,40 +123,22 @@ func gameLoop() {
 			//	clients[i].connection.WriteMessage(1, []byte(lol))
 			//clients[i].connection.WriteMessage(1, []byte(result))
 		}
-		for i := 0; i < len(clients); i++ {
-			//	var result = clientMessage{clients[i].x, clients[i].y}
-			var lol, _ = json.Marshal(clientPositions)
-			clients[i].connection.WriteMessage(1, lol)
-		}
 
 		time.Sleep(200 * time.Millisecond)
 	}
 }
-func handleMessage(w http.ResponseWriter, r *http.Request) {
-	conn, _ := upgrader.Upgrade(w, r, nil) // error ignored for sake of simplicity
-	for {
-		msgType, msg, err := conn.ReadMessage()
-		if err != nil {
-			return
-		}
-		fmt.Printf("%s sent: %s\n", conn.RemoteAddr(), string(msg))
-		conn.WriteMessage(msgType, msg)
-		if string(msg) == "register" {
-			println("aaw yeah")
-			//	_ = append(clients, conn)
-		}
-		//println(clients)
-		/*
-			if string(msg) == "register" {
-				println("aaw yeah")
-				_ = append(clients, conn)
-				//			return
-			} else {
-				println(clients)
-				for i := 0; i < len(clients); i++ {
-					clients[i].WriteMessage(msgType, msg)
-				}
-				//echo(w, r)
-			}*/
+
+func isOutsideLevel(client *client) bool {
+	if client.x >= levelWidth || client.x < 0 || client.y > levelHeight || client.y < 0 {
+		return true
+	}
+	return false
+}
+
+func broadCastToPlayers(messages []clientMessage) {
+	for i := 0; i < len(clients); i++ {
+		//	var result = clientMessage{clients[i].x, clients[i].y}
+		var lol, _ = json.Marshal(messages)
+		clients[i].connection.WriteMessage(1, lol)
 	}
 }
