@@ -20,13 +20,6 @@ const (
 	Right     = 3
 )
 
-type MessageType byte
-
-const (
-	TextMessage    MessageType = 0
-	PositionUpdate             = 1
-)
-
 type client struct {
 	x          int
 	y          int
@@ -38,11 +31,6 @@ type client struct {
 type PlayerPosition struct {
 	X int
 	Y int
-}
-
-type daMessage struct {
-	Type byte
-	Msg  []byte
 }
 
 const levelWidth = 320
@@ -128,9 +116,8 @@ func gameLoop() {
 				level[clients[i].x][clients[i].y] = 1
 				clientPositions = append(clientPositions, PlayerPosition{clients[i].x, clients[i].y})
 			}
-			broadcastToPlayers(clientPositions)
 		}
-
+		broadcastToPlayers(clientPositions)
 		time.Sleep(200 * time.Millisecond)
 	}
 }
@@ -140,14 +127,6 @@ func isOutsideLevel(client *client) bool {
 		return true
 	}
 	return false
-}
-
-func broadcastToPlayer(client *client, messageType MessageType, message []byte) {
-	var resultingMessage, _ = json.Marshal(daMessage{
-		Type: byte(messageType),
-		Msg:  message,
-	})
-	client.connection.WriteMessage(1, resultingMessage)
 }
 
 func broadcastToPlayers(positions []PlayerPosition) {
