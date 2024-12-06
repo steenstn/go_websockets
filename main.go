@@ -66,24 +66,25 @@ func game(w http.ResponseWriter, r *http.Request) {
 func inputLoop(index int) {
 	println("Starting input loop")
 	for {
-		if clients[index].alive == false {
+		c := &clients[index]
+		if c.alive == false {
 			break
 		}
-		_, msg, err := clients[index].connection.ReadMessage()
+		_, msg, err := c.connection.ReadMessage()
 		if err != nil {
 			println("Input reading failed, player dropped")
 			break
 		}
-		fmt.Printf("%s sent: %s\n", clients[index].connection.RemoteAddr(), string(msg))
+		fmt.Printf("%s sent: %s\n", c.connection.RemoteAddr(), string(msg))
 		var input = string(msg)
-		if input == "up" && clients[index].direction != Down {
-			clients[index].direction = Up
-		} else if input == "left" && clients[index].direction != Right {
-			clients[index].direction = Left
-		} else if input == "down" && clients[index].direction != Up {
-			clients[index].direction = Down
-		} else if input == "right" && clients[index].direction != Left {
-			clients[index].direction = Right
+		if input == "up" && c.direction != Down {
+			c.direction = Up
+		} else if input == "left" && c.direction != Right {
+			c.direction = Left
+		} else if input == "down" && c.direction != Up {
+			c.direction = Down
+		} else if input == "right" && c.direction != Left {
+			c.direction = Right
 		}
 	}
 }
