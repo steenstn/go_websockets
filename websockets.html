@@ -1,0 +1,81 @@
+<!-- websockets.html -->
+<style>
+    canvas {
+        border:1px solid #666;
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 40px;
+    }
+</style>
+<input id="input" type="text" />
+<button onclick="send()">Send</button>
+<pre id="output"></pre>
+<canvas id="c"></canvas>
+<script>
+    let c = document.getElementById('c')
+    let  ctx = c.getContext('2d');
+    ctx.fillStyle = "#000";
+    let input = document.getElementById("input");
+    let output = document.getElementById("output");
+    let socket = new WebSocket("ws://localhost:8080/echo");
+
+    let keysDown = {};
+
+    /*
+    ArrowDown
+    ArrowUp
+    ArrowLeft
+    ArrowRight
+     */
+
+    addEventListener("keydown", function (e) {
+        if(!e.repeat) {
+            switch (e.key) {
+                case "ArrowUp":
+                    socket.send("up");
+                    break;
+                case "ArrowDown":
+                    socket.send("down");
+                    break;
+                case "ArrowLeft":
+                    socket.send("left");
+                    break;
+                case "ArrowRight":
+                    socket.send("right");
+                    break;
+            }
+        }
+        keysDown[e.key] = true;
+    }, false);
+
+    addEventListener("keyup", function (e) {
+        delete keysDown[e.code];
+    }, false);
+
+
+
+    socket.onopen = function () {
+        output.innerHTML += "Status: Connected\n";
+//        socket.send("register");
+    };
+
+    socket.onmessage = function (e) {
+        console.log("Server: " + e.data)
+        let res = JSON.parse(e.data)
+        for(let i = 0; i < res.length; i++) {
+            let x = res[i].X;
+            let y = res[i].Y;
+            ctx.fillRect(x,y,1,1);
+        }
+
+        //let x = res.X;
+        //let y = res.Y;
+        //ctx.fillRect(x,y,1,1);
+        //output.innerHTML += "Server: " + e.data + "\n";
+    };
+
+    function send() {
+        socket.send(input.value);
+        input.value = "";
+    }
+</script>
