@@ -15,12 +15,15 @@
 <pre id="output"></pre>
 <canvas id="c"></canvas>
 <script>
+    const MessageType = {
+        TextMessage: 0,
+        PositionUpdate: 1,
+    };
     let c = document.getElementById('c')
     c.width = 320;
     c.height = 240;
     let  ctx = c.getContext('2d');
     ctx.fillStyle = "#000";
-    //ctx.scale(2,2);
     let output = document.getElementById("output");
     let socket = new WebSocket("ws://localhost:8080/echo");
 
@@ -60,11 +63,18 @@
 
     socket.onmessage = function (e) {
         console.log("Server: " + e.data)
-        let res = JSON.parse(e.data)
-        for(let i = 0; i < res.length; i++) {
-            let x = res[i].X;
-            let y = res[i].Y;
-            ctx.fillRect(x,y,1,1);
+        let json = JSON.parse(e.data)
+        let type = json.Type
+        let message = atob(json.Msg);
+        switch (type) {
+            case MessageType.TextMessage:
+                ctx.fillText(message, 10, 50);
+                break;
+            case MessageType.PositionUpdate:
+                handlePositionUpdate(message);
+                break;
+            default:
+                console.log("Unknown type " + type)
         }
 
         //let x = res.X;
@@ -73,4 +83,13 @@
         //output.innerHTML += "Server: " + e.data + "\n";
     };
 
+    function handlePositionUpdate(message) {
+        let data = JSON.parse(message);
+        console.log(data)
+        for(let i = 0; i < data.length; i++) {
+            let x = data[i].X;
+            let y = data[i].Y;
+            ctx.fillRect(x,y,1,1);
+        }
+    }
 </script>

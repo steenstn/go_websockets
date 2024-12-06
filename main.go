@@ -20,6 +20,13 @@ const (
 	Right     = 3
 )
 
+type MessageType byte
+
+const (
+	TextMessage    MessageType = 0
+	PositionUpdate             = 1
+)
+
 type client struct {
 	x          int
 	y          int
@@ -28,9 +35,14 @@ type client struct {
 	alive      bool
 }
 
-type clientMessage struct {
+type PlayerPosition struct {
 	X int
 	Y int
+}
+
+type daMessage struct {
+	Type byte
+	Msg  []byte
 }
 
 const levelWidth = 320
@@ -90,7 +102,7 @@ func inputLoop(index int) {
 
 func gameLoop() {
 	for {
-		clientPositions := make([]clientMessage, 0)
+		clientPositions := make([]PlayerPosition, 0)
 		for i := 0; i < len(clients); i++ {
 			if clients[i].alive == false {
 				continue
@@ -111,17 +123,12 @@ func gameLoop() {
 			}
 			if isOutsideLevel(&clients[i]) || level[clients[i].x][clients[i].y] == 1 {
 				clients[i].alive = false
+				broadcastToPlayer(&clients[i], TextMessage, []byte("you ded"))
 			} else {
 				level[clients[i].x][clients[i].y] = 1
-				clientPositions = append(clientPositions, clientMessage{clients[i].x, clients[i].y})
+				clientPositions = append(clientPositions, PlayerPosition{clients[i].x, clients[i].y})
 			}
 			broadcastToPlayers(clientPositions)
-			// TODO: Send stuff as bytes instead of json strings
-			//var result = "{\"x\":" + strconv.Itoa(clients[i].x) + ",\"y\":" + strconv.Itoa(clients[i].y) + "}"
-			//	var result = clientMessage{clients[i].x, clients[i].y}
-			//	var lol, _ = json.Marshal(result)
-			//	clients[i].connection.WriteMessage(1, []byte(lol))
-			//clients[i].connection.WriteMessage(1, []byte(result))
 		}
 
 		time.Sleep(200 * time.Millisecond)
@@ -135,10 +142,17 @@ func isOutsideLevel(client *client) bool {
 	return false
 }
 
-func broadcastToPlayers(messages []clientMessage) {
+func broadcastToPlayer(client *client, messageType MessageType, message []byte) {
+	var resultingMessage, _ = json.Marshal(daMessage{
+		Type: byte(messageType),
+		Msg:  message,
+	})
+	client.connection.WriteMessage(1, resultingMessage)
+}
+
+func broadcastToPlayers(positions []PlayerPosition) {
 	for i := 0; i < len(clients); i++ {
-		//	var result = clientMessage{clients[i].x, clients[i].y}
-		var lol, _ = json.Marshal(messages)
-		clients[i].connection.WriteMessage(1, lol)
+		var lol, _ = json.Marshal(positions)
+		broadcastToPlayer(&clients[i], PositionUpdate, lol)
 	}
 }
