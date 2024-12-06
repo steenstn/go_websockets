@@ -42,7 +42,6 @@ var gameRunning = false
 
 func main() {
 	http.HandleFunc("/echo", game)
-
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "websockets.html")
 	})
@@ -55,7 +54,7 @@ func game(w http.ResponseWriter, r *http.Request) {
 	clients = append(clients, client)
 
 	go inputLoop(len(clients) - 1)
-	if gameRunning {
+	if gameRunning || len(clients) < 2 {
 		return
 	}
 	gameRunning = true
@@ -112,10 +111,11 @@ func gameLoop() {
 			}
 			if isOutsideLevel(&clients[i]) || level[clients[i].x][clients[i].y] == 1 {
 				clients[i].alive = false
+			} else {
+				level[clients[i].x][clients[i].y] = 1
+				clientPositions = append(clientPositions, clientMessage{clients[i].x, clients[i].y})
 			}
-			level[clients[i].x][clients[i].y] = 1
-			clientPositions = append(clientPositions, clientMessage{clients[i].x, clients[i].y})
-			broadCastToPlayers(clientPositions)
+			broadcastToPlayers(clientPositions)
 			// TODO: Send stuff as bytes instead of json strings
 			//var result = "{\"x\":" + strconv.Itoa(clients[i].x) + ",\"y\":" + strconv.Itoa(clients[i].y) + "}"
 			//	var result = clientMessage{clients[i].x, clients[i].y}
@@ -129,13 +129,13 @@ func gameLoop() {
 }
 
 func isOutsideLevel(client *client) bool {
-	if client.x >= levelWidth || client.x < 0 || client.y > levelHeight || client.y < 0 {
+	if client.x >= levelWidth || client.x < 0 || client.y >= levelHeight || client.y < 0 {
 		return true
 	}
 	return false
 }
 
-func broadCastToPlayers(messages []clientMessage) {
+func broadcastToPlayers(messages []clientMessage) {
 	for i := 0; i < len(clients); i++ {
 		//	var result = clientMessage{clients[i].x, clients[i].y}
 		var lol, _ = json.Marshal(messages)
