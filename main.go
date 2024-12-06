@@ -41,7 +41,7 @@ var clients = make([]Client, 0)
 var gameRunning = false
 
 func main() {
-	http.HandleFunc("/echo", game)
+	http.HandleFunc("/game", game)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "websockets.html")
 	})

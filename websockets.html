@@ -1,95 +1,99 @@
 <style>
     canvas {
-        border:1px solid #666;
-        image-rendering: optimizeSpeed;             /* Older versions of FF          */
-        image-rendering: -moz-crisp-edges;          /* FF 6.0+                       */
-        image-rendering: -o-crisp-edges;            /* OS X & Windows Opera (12.02+) */
-        image-rendering: pixelated;                 /* Awesome future-browsers       */
-        -ms-interpolation-mode: nearest-neighbor;   /* IE                            */
+        border: 1px solid #666;
+        image-rendering: optimizeSpeed; /* Older versions of FF          */
+        image-rendering: -moz-crisp-edges; /* FF 6.0+                       */
+        image-rendering: -o-crisp-edges; /* OS X & Windows Opera (12.02+) */
+        image-rendering: pixelated; /* Awesome future-browsers       */
+        -ms-interpolation-mode: nearest-neighbor; /* IE                            */
         position: absolute;
         top: 30%;
         left: 30%;
-        transform:scale(2);
+        transform: scale(2);
     }
 </style>
 <pre id="output"></pre>
+<input id="input" type="text" value="localhost:8080"/>
+<button onclick="connectAndInitialize()">Connect</button>
 <canvas id="c"></canvas>
 <script>
     const MessageType = {
         TextMessage: 0,
         PositionUpdate: 1,
     };
-    let c = document.getElementById('c')
+    let c = document.getElementById('c');
+
+    let input = document.getElementById("input");
     c.width = 320;
     c.height = 240;
-    let  ctx = c.getContext('2d');
+    let ctx = c.getContext('2d');
     ctx.fillStyle = "#000";
     let output = document.getElementById("output");
-    let socket = new WebSocket("ws://localhost:8080/echo");
 
     let keysDown = {};
+    let autoConnect = true;
+    if (autoConnect) {
+        connectAndInitialize();
+    }
 
-
-    addEventListener("keydown", function (e) {
-        if(!e.repeat) {
-            switch (e.key) {
-                case "ArrowUp":
-                    socket.send("up");
-                    break;
-                case "ArrowDown":
-                    socket.send("down");
-                    break;
-                case "ArrowLeft":
-                    socket.send("left");
-                    break;
-                case "ArrowRight":
-                    socket.send("right");
-                    break;
+    function connectAndInitialize() {
+        let socket = new WebSocket("ws://" + input.value + "/game");
+        addEventListener("keydown", function (e) {
+            if (!e.repeat) {
+                switch (e.key) {
+                    case "ArrowUp":
+                        socket.send("up");
+                        break;
+                    case "ArrowDown":
+                        socket.send("down");
+                        break;
+                    case "ArrowLeft":
+                        socket.send("left");
+                        break;
+                    case "ArrowRight":
+                        socket.send("right");
+                        break;
+                }
             }
-        }
-        keysDown[e.key] = true;
-    }, false);
+            keysDown[e.key] = true;
+        }, false);
 
-    addEventListener("keyup", function (e) {
-        delete keysDown[e.key];
-    }, false);
-
+        addEventListener("keyup", function (e) {
+            delete keysDown[e.key];
+        }, false);
 
 
-    socket.onopen = function () {
-        output.innerHTML += "Status: Connected\n";
-//        socket.send("register");
-    };
+        socket.onopen = () => {
+            output.innerHTML += "Status: Connected\n";
+        };
 
-    socket.onmessage = function (e) {
-        console.log("Server: " + e.data)
-        let json = JSON.parse(e.data)
-        let type = json.Type
-        let message = atob(json.Msg);
-        switch (type) {
-            case MessageType.TextMessage:
-                ctx.fillText(message, 10, 50);
-                break;
-            case MessageType.PositionUpdate:
-                handlePositionUpdate(message);
-                break;
-            default:
-                console.log("Unknown type " + type)
-        }
+        socket.onmessage = function (e) {
+            console.log("Server: " + e.data)
+            let json = JSON.parse(e.data)
+            let type = json.Type
+            let message = atob(json.Msg);
+            switch (type) {
+                case MessageType.TextMessage:
+                    ctx.fillText(message, 10, 50);
+                    break;
+                case MessageType.PositionUpdate:
+                    handlePositionUpdate(message);
+                    break;
+                default:
+                    console.log("Unknown type " + type)
+            }
 
-        //let x = res.X;
-        //let y = res.Y;
-        //ctx.fillRect(x,y,1,1);
-        //output.innerHTML += "Server: " + e.data + "\n";
-    };
+        };
+    }
+
 
     function handlePositionUpdate(message) {
         let data = JSON.parse(message);
         console.log(data)
-        for(let i = 0; i < data.length; i++) {
+        for (let i = 0; i < data.length; i++) {
             let x = data[i].X;
             let y = data[i].Y;
-            ctx.fillRect(x,y,1,1);
+            ctx.fillRect(x, y, 1, 1);
         }
     }
 </script>
