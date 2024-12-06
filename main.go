@@ -20,7 +20,7 @@ const (
 	Right     = 3
 )
 
-type client struct {
+type Client struct {
 	x          int
 	y          int
 	direction  int
@@ -37,7 +37,7 @@ const levelWidth = 320
 const levelHeight = 240
 
 var level = [levelWidth][levelHeight]int{}
-var clients = make([]client, 0)
+var clients = make([]Client, 0)
 var gameRunning = false
 
 func main() {
@@ -50,7 +50,7 @@ func main() {
 
 func game(w http.ResponseWriter, r *http.Request) {
 	conn, _ := upgrader.Upgrade(w, r, nil)
-	client := client{50 + 50*len(clients), 50, Down, conn, true}
+	client := Client{50 + 50*len(clients), 50, Down, conn, true}
 	clients = append(clients, client)
 
 	go inputLoop(len(clients) - 1)
@@ -66,7 +66,7 @@ func game(w http.ResponseWriter, r *http.Request) {
 func inputLoop(index int) {
 	println("Starting input loop")
 	for {
-		c := &clients[index]
+		c := &clients[index] // Why can't this be outside the loop?
 		if c.alive == false {
 			break
 		}
@@ -123,7 +123,7 @@ func gameLoop() {
 	}
 }
 
-func isOutsideLevel(client *client) bool {
+func isOutsideLevel(client *Client) bool {
 	if client.x >= levelWidth || client.x < 0 || client.y >= levelHeight || client.y < 0 {
 		return true
 	}
