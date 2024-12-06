@@ -25,6 +25,7 @@ type client struct {
 	y          int
 	direction  int
 	connection *websocket.Conn
+	alive      bool
 }
 
 type clientMessage struct {
@@ -32,6 +33,7 @@ type clientMessage struct {
 	Y int
 }
 
+var level = [320][240]int{}
 var clients = make([]client, 0)
 var gameRunning = false
 
@@ -45,8 +47,8 @@ func main() {
 }
 
 func game(w http.ResponseWriter, r *http.Request) {
-	conn, _ := upgrader.Upgrade(w, r, nil) // error ignored for sake of simplicity
-	client := client{50 + 50*len(clients), 50, Down, conn}
+	conn, _ := upgrader.Upgrade(w, r, nil)
+	client := client{50 + 50*len(clients), 50, Down, conn, true}
 	clients = append(clients, client)
 
 	go inputLoop(len(clients) - 1)
@@ -62,9 +64,12 @@ func game(w http.ResponseWriter, r *http.Request) {
 func inputLoop(index int) {
 	println("Starting input loop")
 	for {
+		if clients[index].alive == false {
+			break
+		}
 		_, msg, err := clients[index].connection.ReadMessage()
 		if err != nil {
-			println("Input reading failed")
+			println("Input reading failed, player dropped")
 			break
 		}
 		fmt.Printf("%s sent: %s\n", clients[index].connection.RemoteAddr(), string(msg))
@@ -85,7 +90,9 @@ func gameLoop() {
 	for {
 		clientPositions := make([]clientMessage, 0)
 		for i := 0; i < len(clients); i++ {
-			//	go readInput(&clients[i])
+			if clients[i].alive == false {
+				continue
+			}
 			switch clients[i].direction {
 			case Up:
 				println("up")
@@ -100,6 +107,10 @@ func gameLoop() {
 				println("right")
 				clients[i].x++
 			}
+			if level[clients[i].x][clients[i].y] == 1 {
+				clients[i].alive = false
+			}
+			level[clients[i].x][clients[i].y] = 1
 			clientPositions = append(clientPositions, clientMessage{clients[i].x, clients[i].y})
 
 			// TODO: Send stuff as bytes instead of json strings
