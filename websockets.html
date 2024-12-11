@@ -82,11 +82,22 @@
         ctx.fillStyle = "#fff";
         ctx.fillRect(0, 0, levelWidth, levelHeight);
         ctx.fillStyle = "#000"
-        for (let i = 0; i < data.length; i++) {
-            let x = data[i].X;
-            let y = data[i].Y;
+        let players = data.Players;
+        for (let i = 0; i < players.length; i++) {
+            let x = players[i].X;
+            let y = players[i].Y;
             ctx.beginPath();
             ctx.arc(x, y, 10, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        ctx.fillStyle = "#00f"
+        let asteroids = data.Asteroids;
+        for (let i = 0; i < asteroids.length; i++) {
+            let x = asteroids[i].X;
+            let y = asteroids[i].Y;
+            ctx.beginPath();
+            ctx.arc(x, y, asteroids[i].Size*10, 0, 2 * Math.PI);
             ctx.fill();
         }
     }
@@ -96,6 +107,7 @@
             socket.send("up");
         }
         if ("ArrowLeft" in keysDown) {
+            
             socket.send("left");
         } else if ("ArrowRight" in keysDown) {
             socket.send("right");

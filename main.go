@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"math"
+	"math/rand"
 	"net/http"
 	"time"
 )
@@ -13,13 +14,6 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 }
-
-const (
-	Up    int = 0
-	Left      = 1
-	Down      = 2
-	Right     = 3
-)
 
 type Client struct {
 	x          float64
@@ -30,16 +24,36 @@ type Client struct {
 	alive      bool
 }
 
+type Asteroid struct {
+	x         float64
+	y         float64
+	direction float64
+	speed     float64
+	size      int
+}
+
 type PlayerPosition struct {
 	X int
 	Y int
 }
 
+type AsteroidPosition struct {
+	X    int
+	Y    int
+	Size int
+}
+
+type GameState struct {
+	Players   []PlayerPosition
+	Asteroids []AsteroidPosition
+}
+
 const levelWidth = 640
 const levelHeight = 480
 
-var level = [levelWidth][levelHeight]int{}
 var clients = make([]Client, 0)
+var asteroids = make([]Asteroid, 0)
+
 var gameRunning = false
 
 func main() {
@@ -50,8 +64,8 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }
 
-func game(w http.ResponseWriter, r *http.Request) {
-	conn, _ := upgrader.Upgrade(w, r, nil)
+func game(responseWriter http.ResponseWriter, request *http.Request) {
+	conn, _ := upgrader.Upgrade(responseWriter, request, nil)
 	client := Client{float64(50.0 + 50*len(clients)), 50.0, 0.0, 0.0, conn, true}
 	clients = append(clients, client)
 
@@ -61,8 +75,22 @@ func game(w http.ResponseWriter, r *http.Request) {
 	}
 	gameRunning = true
 	println("Game started")
+	initGame()
 	gameLoop()
 
+}
+
+func initGame() {
+	println("Init game")
+	for i := 0; i < 3; i++ {
+		asteroids = append(asteroids, Asteroid{
+			x:         float64(100 + 100*i),
+			y:         200.0,
+			direction: rand.Float64() * 2 * math.Pi,
+			speed:     rand.Float64() * 2,
+			size:      int(rand.Float64()*4 + 1),
+		})
+	}
 }
 
 func inputLoop(index int) {
@@ -121,21 +149,44 @@ func gameLoop() {
 			}*/
 			clientPositions = append(clientPositions, PlayerPosition{int(math.Round(clients[i].x)), int(math.Round(clients[i].y))})
 		}
-		broadcastToPlayers(clientPositions)
+
+		asteroidPositions := make([]AsteroidPosition, 0)
+		for i := 0; i < len(asteroids); i++ {
+			asteroids[i].x += asteroids[i].speed * math.Cos(asteroids[i].direction)
+			asteroids[i].y += asteroids[i].speed * math.Sin(asteroids[i].direction)
+
+			if asteroids[i].x > levelWidth+50 {
+				asteroids[i].x = -50
+			}
+			if asteroids[i].x < -50 {
+				asteroids[i].x = levelWidth + 50
+			}
+			if asteroids[i].y < -50 {
+				asteroids[i].y = levelHeight + 50
+			}
+			if asteroids[i].y > levelHeight+50 {
+				asteroids[i].y = -50
+			}
+
+			asteroidPositions = append(asteroidPositions, AsteroidPosition{
+				X:    int(math.Round(asteroids[i].x)),
+				Y:    int(math.Round(asteroids[i].y)),
+				Size: asteroids[i].size,
+			})
+		}
+		gameState := GameState{
+			Players:   clientPositions,
+			Asteroids: asteroidPositions,
+		}
+
+		broadcastGameState(gameState)
 		time.Sleep(30 * time.Millisecond)
 	}
 }
 
-func isOutsideLevel(client *Client) bool {
-	if client.x >= levelWidth || client.x < 0 || client.y >= levelHeight || client.y < 0 {
-		return true
-	}
-	return false
-}
-
-func broadcastToPlayers(positions []PlayerPosition) {
+func broadcastGameState(gameState GameState) {
 	for i := 0; i < len(clients); i++ {
-		var lol, _ = json.Marshal(positions)
-		sendMessageToClient(clients[i].connection, PositionUpdate, lol)
+		var message, _ = json.Marshal(gameState)
+		sendMessageToClient(clients[i].connection, GameStateUpdate, message)
 	}
 }

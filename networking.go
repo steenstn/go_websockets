@@ -13,8 +13,8 @@ type Message struct {
 type MessageType byte
 
 const (
-	TextMessage    MessageType = 0
-	PositionUpdate             = 1
+	TextMessage     MessageType = 0
+	GameStateUpdate             = 1
 )
 
 func sendMessageToClient(connection *websocket.Conn, messageType MessageType, message []byte) {
