@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"math"
 	"net/http"
 	"time"
 )
@@ -21,9 +22,10 @@ const (
 )
 
 type Client struct {
-	x          int
-	y          int
-	direction  int
+	x          float64
+	y          float64
+	direction  float64
+	speed      float64
 	connection *websocket.Conn
 	alive      bool
 }
@@ -33,8 +35,8 @@ type PlayerPosition struct {
 	Y int
 }
 
-const levelWidth = 320
-const levelHeight = 240
+const levelWidth = 640
+const levelHeight = 480
 
 var level = [levelWidth][levelHeight]int{}
 var clients = make([]Client, 0)
@@ -50,7 +52,7 @@ func main() {
 
 func game(w http.ResponseWriter, r *http.Request) {
 	conn, _ := upgrader.Upgrade(w, r, nil)
-	client := Client{50 + 50*len(clients), 50, Down, conn, true}
+	client := Client{float64(50.0 + 50*len(clients)), 50.0, 0.0, 0.0, conn, true}
 	clients = append(clients, client)
 
 	go inputLoop(len(clients) - 1)
@@ -77,14 +79,14 @@ func inputLoop(index int) {
 		}
 		fmt.Printf("%s sent: %s\n", c.connection.RemoteAddr(), string(msg))
 		var input = string(msg)
-		if input == "up" && c.direction != Down {
-			c.direction = Up
-		} else if input == "left" && c.direction != Right {
-			c.direction = Left
-		} else if input == "down" && c.direction != Up {
-			c.direction = Down
-		} else if input == "right" && c.direction != Left {
-			c.direction = Right
+		if input == "up" {
+			c.speed += 0.1
+		} else if input == "left" {
+			c.direction -= 0.1
+		} else if input == "down" {
+			//c.direction = Down
+		} else if input == "right" {
+			c.direction += 0.1
 		}
 	}
 }
@@ -96,30 +98,31 @@ func gameLoop() {
 			if clients[i].alive == false {
 				continue
 			}
-			switch clients[i].direction {
-			case Up:
-				println("up")
-				clients[i].y--
-			case Left:
-				println("left")
-				clients[i].x--
-			case Down:
-				println("down")
-				clients[i].y++
-			case Right:
-				println("right")
-				clients[i].x++
+			clients[i].x += clients[i].speed * math.Cos(clients[i].direction)
+			clients[i].y += clients[i].speed * math.Sin(clients[i].direction)
+
+			if clients[i].x > levelWidth+10 {
+				clients[i].x = -10
 			}
-			if isOutsideLevel(&clients[i]) || level[clients[i].x][clients[i].y] == 1 {
+			if clients[i].x < -10 {
+				clients[i].x = levelWidth + 10
+			}
+			if clients[i].y < -10 {
+				clients[i].y = levelHeight + 10
+			}
+			if clients[i].y > levelHeight+10 {
+				clients[i].y = -10
+			}
+			/*if isOutsideLevel(&clients[i]) || level[clients[i].x][clients[i].y] == 1 {
 				clients[i].alive = false
 				sendMessageToClient(clients[i].connection, TextMessage, []byte("you ded"))
 			} else {
-				level[clients[i].x][clients[i].y] = 1
-				clientPositions = append(clientPositions, PlayerPosition{clients[i].x, clients[i].y})
-			}
+				//level[clients[i].x][clients[i].y] = 1
+			}*/
+			clientPositions = append(clientPositions, PlayerPosition{int(math.Round(clients[i].x)), int(math.Round(clients[i].y))})
 		}
 		broadcastToPlayers(clientPositions)
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(30 * time.Millisecond)
 	}
 }
 

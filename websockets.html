@@ -7,9 +7,8 @@
         image-rendering: pixelated; /* Awesome future-browsers       */
         -ms-interpolation-mode: nearest-neighbor; /* IE                            */
         position: absolute;
-        top: 30%;
-        left: 30%;
-        transform: scale(2);
+        top: 20%;
+        left: 20%;
     }
 </style>
 <pre id="output"></pre>
@@ -17,44 +16,32 @@
 <button onclick="connectAndInitialize()">Connect</button>
 <canvas id="c"></canvas>
 <script>
+
+    let autoConnect = true;
+    let socket;
     const MessageType = {
         TextMessage: 0,
         PositionUpdate: 1,
     };
+    const levelWidth = 640;
+    const levelHeight = 480;
     let c = document.getElementById('c');
 
     let input = document.getElementById("input");
-    c.width = 320;
-    c.height = 240;
+    c.width = levelWidth;
+    c.height = levelHeight;
     let ctx = c.getContext('2d');
     ctx.fillStyle = "#000";
     let output = document.getElementById("output");
 
     let keysDown = {};
-    let autoConnect = true;
     if (autoConnect) {
         connectAndInitialize();
     }
 
     function connectAndInitialize() {
-        let socket = new WebSocket("ws://" + input.value + "/game");
+        socket = new WebSocket("ws://" + input.value + "/game");
         addEventListener("keydown", function (e) {
-            if (!e.repeat) {
-                switch (e.key) {
-                    case "ArrowUp":
-                        socket.send("up");
-                        break;
-                    case "ArrowDown":
-                        socket.send("down");
-                        break;
-                    case "ArrowLeft":
-                        socket.send("left");
-                        break;
-                    case "ArrowRight":
-                        socket.send("right");
-                        break;
-                }
-            }
             keysDown[e.key] = true;
         }, false);
 
@@ -84,16 +71,35 @@
             }
 
         };
+
+        setInterval(gameLoop, 30);
     }
 
 
     function handlePositionUpdate(message) {
         let data = JSON.parse(message);
         console.log(data)
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, levelWidth, levelHeight);
+        ctx.fillStyle = "#000"
         for (let i = 0; i < data.length; i++) {
             let x = data[i].X;
             let y = data[i].Y;
-            ctx.fillRect(x, y, 1, 1);
+            ctx.beginPath();
+            ctx.arc(x, y, 10, 0, 2 * Math.PI);
+            ctx.fill();
         }
     }
+
+    function gameLoop() {
+        if ("ArrowUp" in keysDown) {
+            socket.send("up");
+        }
+        if ("ArrowLeft" in keysDown) {
+            socket.send("left");
+        } else if ("ArrowRight" in keysDown) {
+            socket.send("right");
+        }
+    }
+
 </script>
