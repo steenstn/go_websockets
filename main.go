@@ -18,6 +18,10 @@ var upgrader = websocket.Upgrader{
 type Client struct {
 	x          float64
 	y          float64
+	vx         float64
+	vy         float64
+	ax         float64
+	ay         float64
 	direction  float64
 	speed      float64
 	connection *websocket.Conn
@@ -33,8 +37,9 @@ type Asteroid struct {
 }
 
 type PlayerPosition struct {
-	X int
-	Y int
+	X         int
+	Y         int
+	Direction float64
 }
 
 type AsteroidPosition struct {
@@ -66,7 +71,7 @@ func main() {
 
 func game(responseWriter http.ResponseWriter, request *http.Request) {
 	conn, _ := upgrader.Upgrade(responseWriter, request, nil)
-	client := Client{float64(50.0 + 50*len(clients)), 50.0, 0.0, 0.0, conn, true}
+	client := Client{float64(50.0 + 50*len(clients)), 50.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, conn, true}
 	clients = append(clients, client)
 
 	go inputLoop(len(clients) - 1)
@@ -108,11 +113,11 @@ func inputLoop(index int) {
 		fmt.Printf("%s sent: %s\n", c.connection.RemoteAddr(), string(msg))
 		var input = string(msg)
 		if input == "up" {
-			c.speed += 0.1
+			c.speed = 0.2
 		} else if input == "left" {
 			c.direction -= 0.1
 		} else if input == "down" {
-			//c.direction = Down
+			c.speed = 0
 		} else if input == "right" {
 			c.direction += 0.1
 		}
@@ -126,8 +131,11 @@ func gameLoop() {
 			if clients[i].alive == false {
 				continue
 			}
-			clients[i].x += clients[i].speed * math.Cos(clients[i].direction)
-			clients[i].y += clients[i].speed * math.Sin(clients[i].direction)
+
+			clients[i].vx += clients[i].speed * math.Cos(clients[i].direction)
+			clients[i].vy += clients[i].speed * math.Sin(clients[i].direction)
+			clients[i].x += clients[i].vx
+			clients[i].y += clients[i].vy
 
 			if clients[i].x > levelWidth+10 {
 				clients[i].x = -10
@@ -147,7 +155,7 @@ func gameLoop() {
 			} else {
 				//level[clients[i].x][clients[i].y] = 1
 			}*/
-			clientPositions = append(clientPositions, PlayerPosition{int(math.Round(clients[i].x)), int(math.Round(clients[i].y))})
+			clientPositions = append(clientPositions, PlayerPosition{int(math.Round(clients[i].x)), int(math.Round(clients[i].y)), clients[i].direction})
 		}
 
 		asteroidPositions := make([]AsteroidPosition, 0)

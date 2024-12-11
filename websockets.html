@@ -46,6 +46,10 @@
         }, false);
 
         addEventListener("keyup", function (e) {
+            console.log(e.key)
+            if(e.key === "ArrowUp") {
+                socket.send("down");
+            }
             delete keysDown[e.key];
         }, false);
 
@@ -89,6 +93,11 @@
             ctx.beginPath();
             ctx.arc(x, y, 10, 0, 2 * Math.PI);
             ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(x+4, y+4);
+            ctx.lineTo(x+15*Math.cos(players[i].Direction), y+15*Math.sin(players[i].Direction));
+            ctx.stroke();
         }
 
         ctx.fillStyle = "#00f"
@@ -105,9 +114,11 @@
     function gameLoop() {
         if ("ArrowUp" in keysDown) {
             socket.send("up");
+        } else if("ArrowDown" in keysDown) {
+            socket.send("down");
         }
         if ("ArrowLeft" in keysDown) {
-            
+
             socket.send("left");
         } else if ("ArrowRight" in keysDown) {
             socket.send("right");
