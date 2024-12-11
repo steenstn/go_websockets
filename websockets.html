@@ -59,7 +59,7 @@
         };
 
         socket.onmessage = function (e) {
-            console.log("Server: " + e.data)
+            //console.log("Server: " + e.data)
             let json = JSON.parse(e.data)
             let type = json.Type
             let message = atob(json.Msg);
@@ -82,7 +82,7 @@
 
     function handlePositionUpdate(message) {
         let data = JSON.parse(message);
-        console.log(data)
+        //console.log(data)
         ctx.fillStyle = "#fff";
         ctx.fillRect(0, 0, levelWidth, levelHeight);
         ctx.fillStyle = "#000"
@@ -109,6 +109,15 @@
             ctx.arc(x, y, asteroids[i].Size*10, 0, 2 * Math.PI);
             ctx.fill();
         }
+        ctx.fillStyle = "#f0f"
+        let bullets = data.Bullets;
+        for (let i = 0; i < bullets.length; i++) {
+            let x = bullets[i].X;
+            let y = bullets[i].Y;
+            ctx.beginPath();
+            ctx.arc(x, y,3, 0, 2 * Math.PI);
+            ctx.fill();
+        }
     }
 
     function gameLoop() {
@@ -118,10 +127,12 @@
             socket.send("down");
         }
         if ("ArrowLeft" in keysDown) {
-
             socket.send("left");
         } else if ("ArrowRight" in keysDown) {
             socket.send("right");
+        }
+        if("x" in keysDown) {
+            socket.send("space");
         }
     }
 

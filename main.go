@@ -20,8 +20,6 @@ type Client struct {
 	y          float64
 	vx         float64
 	vy         float64
-	ax         float64
-	ay         float64
 	direction  float64
 	speed      float64
 	connection *websocket.Conn
@@ -36,6 +34,12 @@ type Asteroid struct {
 	size      int
 }
 
+type Bullet struct {
+	x         float64
+	y         float64
+	direction float64
+}
+
 type PlayerPosition struct {
 	X         int
 	Y         int
@@ -47,10 +51,15 @@ type AsteroidPosition struct {
 	Y    int
 	Size int
 }
+type BulletPosition struct {
+	X int
+	Y int
+}
 
 type GameState struct {
 	Players   []PlayerPosition
 	Asteroids []AsteroidPosition
+	Bullets   []BulletPosition
 }
 
 const levelWidth = 640
@@ -58,6 +67,7 @@ const levelHeight = 480
 
 var clients = make([]Client, 0)
 var asteroids = make([]Asteroid, 0)
+var bullets = make([]Bullet, 0)
 
 var gameRunning = false
 
@@ -71,7 +81,7 @@ func main() {
 
 func game(responseWriter http.ResponseWriter, request *http.Request) {
 	conn, _ := upgrader.Upgrade(responseWriter, request, nil)
-	client := Client{float64(50.0 + 50*len(clients)), 50.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, conn, true}
+	client := Client{float64(50.0 + 50*len(clients)), 50.0, 0.0, 0.0, 0.0, 0.0, conn, true}
 	clients = append(clients, client)
 
 	go inputLoop(len(clients) - 1)
@@ -120,6 +130,12 @@ func inputLoop(index int) {
 			c.speed = 0
 		} else if input == "right" {
 			c.direction += 0.1
+		} else if input == "space" {
+			bullets = append(bullets, Bullet{
+				x:         c.x,
+				y:         c.y,
+				direction: c.direction,
+			})
 		}
 	}
 }
@@ -182,9 +198,21 @@ func gameLoop() {
 				Size: asteroids[i].size,
 			})
 		}
+
+		bulletPositions := make([]BulletPosition, 0)
+		for i := 0; i < len(bullets); i++ {
+			bullets[i].x += 2 * math.Cos(bullets[i].direction)
+			bullets[i].y += 2 * math.Sin(bullets[i].direction)
+			bulletPositions = append(bulletPositions, BulletPosition{
+				X: int(bullets[i].x),
+				Y: int(bullets[i].y),
+			})
+		}
+
 		gameState := GameState{
 			Players:   clientPositions,
 			Asteroids: asteroidPositions,
+			Bullets:   bulletPositions,
 		}
 
 		broadcastGameState(gameState)
