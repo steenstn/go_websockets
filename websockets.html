@@ -46,7 +46,9 @@
     }
 
     function connectAndInitialize() {
-        socket = new WebSocket("ws://" + input.value + "/game");
+        let trimmedValue = input.value.replace(/https?:\/\//g, "")
+
+        socket = new WebSocket("ws://" + trimmedValue + "/game");
         addEventListener("keydown", function (e) {
             keysDown[e.key] = true;
             keyDownCounter++;
