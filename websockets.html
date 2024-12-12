@@ -88,38 +88,58 @@
         setInterval(gameLoop, 30);
     }
 
+    let drawShip = (x, y, direction) => {
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        /*
+                ctx.moveTo(x-10*Math.cos(direction+Math.PI/2), y+10*Math.sin(direction+Math.PI/2));
+                ctx.lineTo(x+10*Math.cos(direction-Math.PI/2), y+10*Math.sin(direction-Math.PI/2));
+                ctx.lineTo(x+Math.cos(direction), y-10*Math.sin(direction));
+                */
+
+        ctx.moveTo(x-5 + 10 * Math.cos(direction + Math.PI / 2), y-5 + 10 * Math.sin(direction + Math.PI / 2));
+        ctx.lineTo(x-5 + 10*Math.cos(direction-Math.PI/2), y-5+10*Math.sin(direction-Math.PI/2));
+        ctx.lineTo(x-5 + 10*Math.cos(direction), y-5 + 10*Math.sin(direction));
+       ctx.fill()
+
+        //ctx.lineTo(x + 15 * Math.cos(players[i].Direction), y + 15 * Math.sin(players[i].Direction));
+        //ctx.fill();
+    }
 
     function handlePositionUpdate(message) {
         let data = JSON.parse(message);
         //console.log(data)
-        ctx.fillStyle = "#fff";
+        ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, levelWidth, levelHeight);
-        ctx.fillStyle = "#000"
         let players = data.Players;
         for (let i = 0; i < players.length; i++) {
             let x = players[i].X;
             let y = players[i].Y;
-            ctx.fillRect(x, y, 10, 10);
-
-            ctx.beginPath();
-            ctx.moveTo(x + 5, y + 5);
-            ctx.lineTo(x + 15 * Math.cos(players[i].Direction), y + 15 * Math.sin(players[i].Direction));
-            ctx.stroke();
+           // ctx.fillRect(x, y, 10, 10);
+            drawShip(x, y, players[i].Direction);
+            /*
+                        ctx.beginPath();
+                        ctx.moveTo(x + 5, y + 5);
+                        ctx.lineTo(x + 15 * Math.cos(players[i].Direction), y + 15 * Math.sin(players[i].Direction));
+                        ctx.stroke();*/
         }
 
-        ctx.fillStyle = "#00f"
+        ctx.fillStyle = "#afafaf"
         let asteroids = data.Asteroids;
         for (let i = 0; i < asteroids.length; i++) {
             let x = asteroids[i].X;
             let y = asteroids[i].Y;
-            ctx.fillRect(x,y,asteroids[i].Size * 10, asteroids[i].Size * 10);
+            ctx.beginPath();
+            ctx.arc(x,y,asteroids[i].Size*5, 0, 2 * Math.PI);
+            ctx.fill();
+            //ctx.fillRect(x, y, asteroids[i].Size * 10, asteroids[i].Size * 10);
         }
-        ctx.fillStyle = "#f0f"
+        ctx.fillStyle = "#fff"
         let bullets = data.Bullets;
         for (let i = 0; i < bullets.length; i++) {
             let x = bullets[i].X;
             let y = bullets[i].Y;
-            ctx.fillRect(x,y,3, 3);
+            ctx.fillRect(x, y, 3, 3);
         }
     }
 
