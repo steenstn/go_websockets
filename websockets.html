@@ -19,6 +19,7 @@
 
     let autoConnect = true;
     let socket;
+    let keyDownCounter = 0;
     const MessageType = {
         TextMessage: 0,
         PositionUpdate: 1,
@@ -35,6 +36,8 @@
     let output = document.getElementById("output");
 
     let keysDown = {};
+    let keysHit = {};
+
     if (autoConnect) {
         connectAndInitialize();
     }
@@ -43,6 +46,10 @@
         socket = new WebSocket("ws://" + input.value + "/game");
         addEventListener("keydown", function (e) {
             keysDown[e.key] = true;
+            keyDownCounter++;
+            if (keyDownCounter === 1) {
+                keysHit[e.key] = true;
+            }
         }, false);
 
         addEventListener("keyup", function (e) {
@@ -50,7 +57,9 @@
             if (e.key === "ArrowUp") {
                 socket.send("down");
             }
+            keyDownCounter = 0;
             delete keysDown[e.key];
+            delete keysHit[e.key];
         }, false);
 
 
@@ -90,12 +99,10 @@
         for (let i = 0; i < players.length; i++) {
             let x = players[i].X;
             let y = players[i].Y;
-            ctx.beginPath();
-            ctx.arc(x, y, 10, 0, 2 * Math.PI);
-            ctx.fill();
+            ctx.fillRect(x, y, 10, 10);
 
             ctx.beginPath();
-            ctx.moveTo(x + 4, y + 4);
+            ctx.moveTo(x + 5, y + 5);
             ctx.lineTo(x + 15 * Math.cos(players[i].Direction), y + 15 * Math.sin(players[i].Direction));
             ctx.stroke();
         }
@@ -105,18 +112,14 @@
         for (let i = 0; i < asteroids.length; i++) {
             let x = asteroids[i].X;
             let y = asteroids[i].Y;
-            ctx.beginPath();
-            ctx.arc(x, y, asteroids[i].Size * 10, 0, 2 * Math.PI);
-            ctx.fill();
+            ctx.fillRect(x,y,asteroids[i].Size * 10, asteroids[i].Size * 10);
         }
         ctx.fillStyle = "#f0f"
         let bullets = data.Bullets;
         for (let i = 0; i < bullets.length; i++) {
             let x = bullets[i].X;
             let y = bullets[i].Y;
-            ctx.beginPath();
-            ctx.arc(x, y, 3, 0, 2 * Math.PI);
-            ctx.fill();
+            ctx.fillRect(x,y,3, 3);
         }
     }
 
@@ -131,8 +134,9 @@
         } else if ("ArrowRight" in keysDown) {
             socket.send("right");
         }
-        if ("x" in keysDown) {
+        if ("x" in keysHit) {
             socket.send("space");
+            delete keysHit["x"];
         }
     }
 

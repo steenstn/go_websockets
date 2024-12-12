@@ -26,6 +26,7 @@ type Client struct {
 type Asteroid struct {
 	position Movable
 	size     int
+	alive    bool
 }
 
 type Movable struct {
@@ -33,6 +34,11 @@ type Movable struct {
 	y         float64
 	direction float64
 	speed     float64
+}
+
+type Bullet struct {
+	position Movable
+	alive    bool
 }
 
 type PlayerPosition struct {
@@ -62,7 +68,7 @@ const levelHeight = 480
 
 var clients = make([]Client, 0)
 var asteroids = make([]Asteroid, 0)
-var bullets = make([]Movable, 0)
+var bullets = make([]Bullet, 0)
 
 var gameRunning = false
 
@@ -97,13 +103,13 @@ func game(responseWriter http.ResponseWriter, request *http.Request) {
 
 func initGame() {
 	println("Init game")
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 5; i++ {
 		asteroids = append(asteroids, Asteroid{position: Movable{
 			x:         float64(100 + 100*i),
 			y:         200.0,
 			direction: rand.Float64() * 2 * math.Pi,
 			speed:     rand.Float64() * 2},
-			size: int(rand.Float64()*4 + 1),
+			size: int(rand.Float64()*5 + 1),
 		})
 	}
 }
@@ -125,18 +131,18 @@ func inputLoop(index int) {
 		if input == "up" {
 			c.position.speed = 0.2
 		} else if input == "left" {
-			c.position.direction -= 0.1
+			c.position.direction -= 0.15
 		} else if input == "down" {
 			c.position.speed = 0
 		} else if input == "right" {
-			c.position.direction += 0.1
+			c.position.direction += 0.15
 		} else if input == "space" {
-			bullets = append(bullets, Movable{
+			bullets = append(bullets, Bullet{Movable{
 				x:         c.position.x,
 				y:         c.position.y,
 				direction: c.position.direction,
 				speed:     math.Sqrt(c.vx*c.vx+c.vy*c.vy) + 1.0,
-			})
+			}, true})
 		}
 	}
 }
@@ -164,6 +170,11 @@ func gameLoop() {
 			asteroids[i].position.y += asteroids[i].position.speed * math.Sin(asteroids[i].position.direction)
 
 			wrapAround(&asteroids[i].position, levelWidth, levelHeight, 50)
+			for j := 0; j < len(clients); j++ {
+				if overlap(asteroids[i].position.x, asteroids[i].position.y, float64(asteroids[i].size*9.0), float64(asteroids[i].size*9.0), clients[j].position.x, clients[j].position.y, 10, 10) {
+					clients[j].alive = false
+				}
+			}
 
 			asteroidPositions = append(asteroidPositions, AsteroidPosition{
 				X:    int(math.Round(asteroids[i].position.x)),
@@ -174,18 +185,31 @@ func gameLoop() {
 
 		bulletPositions := make([]BulletPosition, 0)
 		for i := 0; i < len(bullets); i++ {
-			bullets[i].x += bullets[i].speed * math.Cos(bullets[i].direction)
-			bullets[i].y += bullets[i].speed * math.Sin(bullets[i].direction)
+			if !bullets[i].alive {
+				continue
+			}
+			currentBullet := &bullets[i].position
+			currentBullet.x += currentBullet.speed * math.Cos(currentBullet.direction)
+			currentBullet.y += currentBullet.speed * math.Sin(currentBullet.direction)
 
 			for j := 0; j < len(asteroids); j++ {
-				if asteroids[j].size > 0 && overlap(bullets[i].x, bullets[i].y, 6, 6, asteroids[j].position.x, asteroids[j].position.y, float64(asteroids[j].size*2.0), float64(asteroids[j].size*2.0)) {
+				if asteroids[j].size > 0 && overlap(currentBullet.x, currentBullet.y, 6, 6, asteroids[j].position.x, asteroids[j].position.y, float64(asteroids[j].size*10.0), float64(asteroids[j].size*10.0)) {
 					asteroids[j].size--
+					bullets[i].alive = false
+					if asteroids[j].size > 0 {
+						asteroids[j].position.direction = rand.Float64() * 2 * math.Pi
+						asteroids = append(asteroids, Asteroid{
+							position: Movable{asteroids[j].position.x, asteroids[j].position.y, rand.Float64() * 2 * math.Pi, asteroids[j].position.speed * 1.2},
+							size:     asteroids[j].size,
+							alive:    true,
+						})
+					}
 				}
 			}
 
 			bulletPositions = append(bulletPositions, BulletPosition{
-				X: int(bullets[i].x),
-				Y: int(bullets[i].y),
+				X: int(currentBullet.x),
+				Y: int(currentBullet.y),
 			})
 		}
 
