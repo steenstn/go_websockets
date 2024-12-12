@@ -16,28 +16,23 @@ var upgrader = websocket.Upgrader{
 }
 
 type Client struct {
-	x          float64
-	y          float64
+	position   Movable
 	vx         float64
 	vy         float64
-	direction  float64
-	speed      float64
 	connection *websocket.Conn
 	alive      bool
 }
 
 type Asteroid struct {
+	position Movable
+	size     int
+}
+
+type Movable struct {
 	x         float64
 	y         float64
 	direction float64
 	speed     float64
-	size      int
-}
-
-type Bullet struct {
-	x         float64
-	y         float64
-	direction float64
 }
 
 type PlayerPosition struct {
@@ -67,7 +62,7 @@ const levelHeight = 480
 
 var clients = make([]Client, 0)
 var asteroids = make([]Asteroid, 0)
-var bullets = make([]Bullet, 0)
+var bullets = make([]Movable, 0)
 
 var gameRunning = false
 
@@ -81,7 +76,12 @@ func main() {
 
 func game(responseWriter http.ResponseWriter, request *http.Request) {
 	conn, _ := upgrader.Upgrade(responseWriter, request, nil)
-	client := Client{float64(50.0 + 50*len(clients)), 50.0, 0.0, 0.0, 0.0, 0.0, conn, true}
+	client := Client{Movable{
+		x:         float64(50.0 + 50*len(clients)),
+		y:         50.0,
+		direction: 0,
+		speed:     0,
+	}, 0.0, 0.0, conn, true}
 	clients = append(clients, client)
 
 	go inputLoop(len(clients) - 1)
@@ -98,12 +98,12 @@ func game(responseWriter http.ResponseWriter, request *http.Request) {
 func initGame() {
 	println("Init game")
 	for i := 0; i < 3; i++ {
-		asteroids = append(asteroids, Asteroid{
+		asteroids = append(asteroids, Asteroid{position: Movable{
 			x:         float64(100 + 100*i),
 			y:         200.0,
 			direction: rand.Float64() * 2 * math.Pi,
-			speed:     rand.Float64() * 2,
-			size:      int(rand.Float64()*4 + 1),
+			speed:     rand.Float64() * 2},
+			size: int(rand.Float64()*4 + 1),
 		})
 	}
 }
@@ -123,18 +123,19 @@ func inputLoop(index int) {
 		fmt.Printf("%s sent: %s\n", c.connection.RemoteAddr(), string(msg))
 		var input = string(msg)
 		if input == "up" {
-			c.speed = 0.2
+			c.position.speed = 0.2
 		} else if input == "left" {
-			c.direction -= 0.1
+			c.position.direction -= 0.1
 		} else if input == "down" {
-			c.speed = 0
+			c.position.speed = 0
 		} else if input == "right" {
-			c.direction += 0.1
+			c.position.direction += 0.1
 		} else if input == "space" {
-			bullets = append(bullets, Bullet{
-				x:         c.x,
-				y:         c.y,
-				direction: c.direction,
+			bullets = append(bullets, Movable{
+				x:         c.position.x,
+				y:         c.position.y,
+				direction: c.position.direction,
+				speed:     math.Sqrt(c.vx*c.vx+c.vy*c.vy) + 1.0,
 			})
 		}
 	}
@@ -148,61 +149,40 @@ func gameLoop() {
 				continue
 			}
 
-			clients[i].vx += clients[i].speed * math.Cos(clients[i].direction)
-			clients[i].vy += clients[i].speed * math.Sin(clients[i].direction)
-			clients[i].x += clients[i].vx
-			clients[i].y += clients[i].vy
+			clients[i].vx += clients[i].position.speed * math.Cos(clients[i].position.direction)
+			clients[i].vy += clients[i].position.speed * math.Sin(clients[i].position.direction)
+			clients[i].position.x += clients[i].vx
+			clients[i].position.y += clients[i].vy
+			wrapAround(&clients[i].position, levelWidth, levelHeight, 10)
 
-			if clients[i].x > levelWidth+10 {
-				clients[i].x = -10
-			}
-			if clients[i].x < -10 {
-				clients[i].x = levelWidth + 10
-			}
-			if clients[i].y < -10 {
-				clients[i].y = levelHeight + 10
-			}
-			if clients[i].y > levelHeight+10 {
-				clients[i].y = -10
-			}
-			/*if isOutsideLevel(&clients[i]) || level[clients[i].x][clients[i].y] == 1 {
-				clients[i].alive = false
-				sendMessageToClient(clients[i].connection, TextMessage, []byte("you ded"))
-			} else {
-				//level[clients[i].x][clients[i].y] = 1
-			}*/
-			clientPositions = append(clientPositions, PlayerPosition{int(math.Round(clients[i].x)), int(math.Round(clients[i].y)), clients[i].direction})
+			clientPositions = append(clientPositions, PlayerPosition{int(math.Round(clients[i].position.x)), int(math.Round(clients[i].position.y)), clients[i].position.direction})
 		}
 
 		asteroidPositions := make([]AsteroidPosition, 0)
 		for i := 0; i < len(asteroids); i++ {
-			asteroids[i].x += asteroids[i].speed * math.Cos(asteroids[i].direction)
-			asteroids[i].y += asteroids[i].speed * math.Sin(asteroids[i].direction)
+			asteroids[i].position.x += asteroids[i].position.speed * math.Cos(asteroids[i].position.direction)
+			asteroids[i].position.y += asteroids[i].position.speed * math.Sin(asteroids[i].position.direction)
 
-			if asteroids[i].x > levelWidth+50 {
-				asteroids[i].x = -50
-			}
-			if asteroids[i].x < -50 {
-				asteroids[i].x = levelWidth + 50
-			}
-			if asteroids[i].y < -50 {
-				asteroids[i].y = levelHeight + 50
-			}
-			if asteroids[i].y > levelHeight+50 {
-				asteroids[i].y = -50
-			}
+			wrapAround(&asteroids[i].position, levelWidth, levelHeight, 50)
 
 			asteroidPositions = append(asteroidPositions, AsteroidPosition{
-				X:    int(math.Round(asteroids[i].x)),
-				Y:    int(math.Round(asteroids[i].y)),
+				X:    int(math.Round(asteroids[i].position.x)),
+				Y:    int(math.Round(asteroids[i].position.y)),
 				Size: asteroids[i].size,
 			})
 		}
 
 		bulletPositions := make([]BulletPosition, 0)
 		for i := 0; i < len(bullets); i++ {
-			bullets[i].x += 2 * math.Cos(bullets[i].direction)
-			bullets[i].y += 2 * math.Sin(bullets[i].direction)
+			bullets[i].x += bullets[i].speed * math.Cos(bullets[i].direction)
+			bullets[i].y += bullets[i].speed * math.Sin(bullets[i].direction)
+
+			for j := 0; j < len(asteroids); j++ {
+				if asteroids[j].size > 0 && overlap(bullets[i].x, bullets[i].y, 6, 6, asteroids[j].position.x, asteroids[j].position.y, float64(asteroids[j].size*2.0), float64(asteroids[j].size*2.0)) {
+					asteroids[j].size--
+				}
+			}
+
 			bulletPositions = append(bulletPositions, BulletPosition{
 				X: int(bullets[i].x),
 				Y: int(bullets[i].y),
@@ -218,6 +198,25 @@ func gameLoop() {
 		broadcastGameState(gameState)
 		time.Sleep(30 * time.Millisecond)
 	}
+}
+
+func wrapAround(position *Movable, xMax float64, yMax float64, buffer float64) {
+	if position.x > xMax+buffer {
+		position.x = -buffer
+	}
+	if position.x < -buffer {
+		position.x = xMax + buffer
+	}
+	if position.y < -buffer {
+		position.y = yMax + buffer
+	}
+	if position.y > yMax+buffer {
+		position.y = -buffer
+	}
+}
+
+func overlap(x float64, y float64, width float64, height float64, x2 float64, y2 float64, width2 float64, height2 float64) bool {
+	return x < x2+width2 && x+width > x2 && y < y2+height2 && y+height > y2
 }
 
 func broadcastGameState(gameState GameState) {

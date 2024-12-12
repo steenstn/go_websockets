@@ -47,7 +47,7 @@
 
         addEventListener("keyup", function (e) {
             console.log(e.key)
-            if(e.key === "ArrowUp") {
+            if (e.key === "ArrowUp") {
                 socket.send("down");
             }
             delete keysDown[e.key];
@@ -95,8 +95,8 @@
             ctx.fill();
 
             ctx.beginPath();
-            ctx.moveTo(x+4, y+4);
-            ctx.lineTo(x+15*Math.cos(players[i].Direction), y+15*Math.sin(players[i].Direction));
+            ctx.moveTo(x + 4, y + 4);
+            ctx.lineTo(x + 15 * Math.cos(players[i].Direction), y + 15 * Math.sin(players[i].Direction));
             ctx.stroke();
         }
 
@@ -106,7 +106,7 @@
             let x = asteroids[i].X;
             let y = asteroids[i].Y;
             ctx.beginPath();
-            ctx.arc(x, y, asteroids[i].Size*10, 0, 2 * Math.PI);
+            ctx.arc(x, y, asteroids[i].Size * 10, 0, 2 * Math.PI);
             ctx.fill();
         }
         ctx.fillStyle = "#f0f"
@@ -115,7 +115,7 @@
             let x = bullets[i].X;
             let y = bullets[i].Y;
             ctx.beginPath();
-            ctx.arc(x, y,3, 0, 2 * Math.PI);
+            ctx.arc(x, y, 3, 0, 2 * Math.PI);
             ctx.fill();
         }
     }
@@ -123,7 +123,7 @@
     function gameLoop() {
         if ("ArrowUp" in keysDown) {
             socket.send("up");
-        } else if("ArrowDown" in keysDown) {
+        } else if ("ArrowDown" in keysDown) {
             socket.send("down");
         }
         if ("ArrowLeft" in keysDown) {
@@ -131,7 +131,7 @@
         } else if ("ArrowRight" in keysDown) {
             socket.send("right");
         }
-        if("x" in keysDown) {
+        if ("x" in keysDown) {
             socket.send("space");
         }
     }
