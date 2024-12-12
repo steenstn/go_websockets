@@ -1,6 +1,9 @@
 <style>
+    body {
+        background-color: #444;
+    }
     canvas {
-        border: 1px solid #666;
+        border: 1px solid #eee;
         image-rendering: optimizeSpeed; /* Older versions of FF          */
         image-rendering: -moz-crisp-edges; /* FF 6.0+                       */
         image-rendering: -o-crisp-edges; /* OS X & Windows Opera (12.02+) */
@@ -68,7 +71,6 @@
         };
 
         socket.onmessage = function (e) {
-            //console.log("Server: " + e.data)
             let json = JSON.parse(e.data)
             let type = json.Type
             let message = atob(json.Msg);
@@ -91,19 +93,12 @@
     let drawShip = (x, y, direction) => {
         ctx.fillStyle = "#fff";
         ctx.beginPath();
-        /*
-                ctx.moveTo(x-10*Math.cos(direction+Math.PI/2), y+10*Math.sin(direction+Math.PI/2));
-                ctx.lineTo(x+10*Math.cos(direction-Math.PI/2), y+10*Math.sin(direction-Math.PI/2));
-                ctx.lineTo(x+Math.cos(direction), y-10*Math.sin(direction));
-                */
 
-        ctx.moveTo(x-5 + 10 * Math.cos(direction + Math.PI / 2), y-5 + 10 * Math.sin(direction + Math.PI / 2));
-        ctx.lineTo(x-5 + 10*Math.cos(direction-Math.PI/2), y-5+10*Math.sin(direction-Math.PI/2));
-        ctx.lineTo(x-5 + 10*Math.cos(direction), y-5 + 10*Math.sin(direction));
-       ctx.fill()
+        ctx.moveTo(x - 5 + 10 * Math.cos(direction + Math.PI / 2), y - 5 + 10 * Math.sin(direction + Math.PI / 2));
+        ctx.lineTo(x - 5 + 10 * Math.cos(direction - Math.PI / 2), y - 5 + 10 * Math.sin(direction - Math.PI / 2));
+        ctx.lineTo(x - 5 + 10 * Math.cos(direction), y - 5 + 10 * Math.sin(direction));
+        ctx.fill()
 
-        //ctx.lineTo(x + 15 * Math.cos(players[i].Direction), y + 15 * Math.sin(players[i].Direction));
-        //ctx.fill();
     }
 
     function handlePositionUpdate(message) {
@@ -115,24 +110,17 @@
         for (let i = 0; i < players.length; i++) {
             let x = players[i].X;
             let y = players[i].Y;
-           // ctx.fillRect(x, y, 10, 10);
             drawShip(x, y, players[i].Direction);
-            /*
-                        ctx.beginPath();
-                        ctx.moveTo(x + 5, y + 5);
-                        ctx.lineTo(x + 15 * Math.cos(players[i].Direction), y + 15 * Math.sin(players[i].Direction));
-                        ctx.stroke();*/
         }
 
-        ctx.fillStyle = "#afafaf"
+        ctx.fillStyle = "#b8b8ce"
         let asteroids = data.Asteroids;
         for (let i = 0; i < asteroids.length; i++) {
             let x = asteroids[i].X;
             let y = asteroids[i].Y;
             ctx.beginPath();
-            ctx.arc(x,y,asteroids[i].Size*5, 0, 2 * Math.PI);
+            ctx.arc(x, y, asteroids[i].Size * 5, 0, 2 * Math.PI);
             ctx.fill();
-            //ctx.fillRect(x, y, asteroids[i].Size * 10, asteroids[i].Size * 10);
         }
         ctx.fillStyle = "#fff"
         let bullets = data.Bullets;
