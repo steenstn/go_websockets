@@ -106,7 +106,7 @@ func initGame() {
 	for i := 0; i < 5; i++ {
 		asteroids = append(asteroids, Asteroid{position: Movable{
 			x:         float64(100 + 100*i),
-			y:         200.0,
+			y:         200.0 + rand.Float64()*150,
 			direction: rand.Float64() * 2 * math.Pi,
 			speed:     rand.Float64() * 2},
 			size: int(rand.Float64()*5 + 1),
@@ -166,6 +166,9 @@ func gameLoop() {
 
 		asteroidPositions := make([]AsteroidPosition, 0)
 		for i := 0; i < len(asteroids); i++ {
+			if asteroids[i].size <= 0 {
+				continue
+			}
 			asteroids[i].position.x += asteroids[i].position.speed * math.Cos(asteroids[i].position.direction)
 			asteroids[i].position.y += asteroids[i].position.speed * math.Sin(asteroids[i].position.direction)
 
