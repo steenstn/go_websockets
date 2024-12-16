@@ -91,10 +91,11 @@ type PickupPosition struct {
 
 type GameState struct {
 	Players []PlayerPosition
+	Pickups []PickupPosition
 }
 
-const levelWidth = 100
-const levelHeight = 100
+const levelWidth = 50
+const levelHeight = 50
 
 var clients = make([]*Client, 0)
 var pickups = make([]Pickup, 3)
@@ -180,14 +181,16 @@ func inputLoop(c *Client) {
 func gameLoop() {
 	for {
 		clientPositions := make([]PlayerPosition, 0)
+
+		// Update snakes
 		for i := 0; i < len(clients); i++ {
 			if clients[i].alive == false {
 				continue
 			}
 
 			moveSnake(&clients[i].snake, clients[i].tailLength, clients[i].direction)
-			checkCollision(clients[i])
-
+			checkCollisionsWithSnakes(clients[i])
+			checkCollisionsWithPickups(clients[i])
 			/*	clients[i].vy += clients[i].position.speed * math.Sin(clients[i].position.direction)
 				clients[i].position.x += clients[i].vx
 				clients[i].position.y += clients[i].vy*/
@@ -196,8 +199,15 @@ func gameLoop() {
 			clientPositions = append(clientPositions, PlayerPosition{clients[i].snake[0].x, clients[i].snake[0].y, clients[i].direction, toTailPosition(clients[i].snake, clients[i].tailLength)})
 		}
 
+		pickupPositions := make([]PickupPosition, len(pickups))
+		for i := 0; i < len(pickups); i++ {
+			pickupPositions[i].X = pickups[i].x
+			pickupPositions[i].Y = pickups[i].y
+		}
+
 		gameState := GameState{
 			Players: clientPositions,
+			Pickups: pickupPositions,
 		}
 
 		broadcastGameState(gameState)
@@ -226,7 +236,7 @@ func moveSnake(snakePointer *[]TailSegment, tailLength int, direction Direction)
 	}
 }
 
-func checkCollision(client *Client) {
+func checkCollisionsWithSnakes(client *Client) {
 	headX := client.snake[0].x
 	headY := client.snake[0].y
 
@@ -240,6 +250,21 @@ func checkCollision(client *Client) {
 				client.alive = false
 				println("collision")
 			}
+		}
+	}
+}
+
+func checkCollisionsWithPickups(client *Client) {
+	for i := 0; i < len(pickups); i++ {
+		if client.snake[0].x == pickups[i].x && client.snake[0].y == pickups[i].y {
+			// Grow snake
+			client.tailLength++
+			client.snake[client.tailLength].x = client.snake[client.tailLength-1].x
+			client.snake[client.tailLength].y = client.snake[client.tailLength-1].y
+
+			// Reposition pickup
+			pickups[i].x = rand.Intn(2 + levelWidth - 4)
+			pickups[i].y = rand.Intn(2 + levelHeight - 4)
 		}
 	}
 }
@@ -265,7 +290,17 @@ func overlap(x float64, y float64, width float64, height float64, x2 float64, y2
 
 func broadcastGameState(gameState GameState) {
 	for i := 0; i < len(clients); i++ {
+		if !clients[i].alive {
+			continue
+		}
 		var message, _ = json.Marshal(gameState)
-		sendMessageToClient(clients[i].connection, GameStateUpdate, message)
+		var err = sendMessageToClient(clients[i].connection, GameStateUpdate, message)
+		if err != nil {
+			closeError := clients[i].connection.Close()
+			clients[i].alive = false
+			if closeError != nil {
+				println("Failed to close connection")
+			}
+		}
 	}
 }

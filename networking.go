@@ -18,7 +18,7 @@ const (
 )
 
 // gprc?
-func sendMessageToClient(connection *websocket.Conn, messageType MessageType, message []byte) {
+func sendMessageToClient(connection *websocket.Conn, messageType MessageType, message []byte) error {
 	var resultingMessage, _ = json.Marshal(Message{
 		Type: byte(messageType),
 		Msg:  message,
@@ -26,5 +26,7 @@ func sendMessageToClient(connection *websocket.Conn, messageType MessageType, me
 	err := connection.WriteMessage(1, resultingMessage)
 	if err != nil {
 		println("Error when sending message to user")
+		return err
 	}
+	return nil
 }

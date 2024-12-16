@@ -27,8 +27,8 @@
         TextMessage: 0,
         PositionUpdate: 1,
     };
-    const levelWidth = 100;
-    const levelHeight = 100;
+    const levelWidth = 50;
+    const levelHeight = 50;
     const scale = 8;
     const canvasWidth = levelWidth * scale;
     const canvasHeight = levelHeight * scale;
@@ -55,6 +55,8 @@ input.value = document.location.href.replace(/https?:\/\//g, "").replace(":8080/
 
         socket = new WebSocket("ws://" + trimmedValue + ":8080/game");
         addEventListener("keydown", function (e) {
+
+            console.log("down " + e.key)
             keysDown[e.key] = true;
             keyDownCounter++;
             if (keyDownCounter === 1) {
@@ -64,9 +66,6 @@ input.value = document.location.href.replace(/https?:\/\//g, "").replace(":8080/
 
         addEventListener("keyup", function (e) {
             console.log(e.key)
-            if (e.key === "ArrowUp") {
-                socket.send("down");
-            }
             keyDownCounter = 0;
             delete keysDown[e.key];
             delete keysHit[e.key];
@@ -80,7 +79,7 @@ input.value = document.location.href.replace(/https?:\/\//g, "").replace(":8080/
             let json = JSON.parse(e.data)
             let type = json.Type
             let message = atob(json.Msg);
-            console.log(message)
+            //console.log(message)
             switch (type) {
                 case MessageType.TextMessage:
                     ctx.fillText(message, 10, 50);
@@ -108,6 +107,12 @@ input.value = document.location.href.replace(/https?:\/\//g, "").replace(":8080/
                 ctx.fillStyle = "#fff"
                 ctx.fillRect(players[i].Tail[j].X* scale,players[i].Tail[j].Y * scale, scale, scale);
             }
+        }
+
+        let pickups = data.Pickups
+        for(let i=0; i < pickups.length; i++) {
+            ctx.fillStyle = "#d43";
+            ctx.fillRect(pickups[i].X * scale, pickups[i].Y * scale, scale, scale);
         }
     }
 
