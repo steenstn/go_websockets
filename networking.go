@@ -17,6 +17,7 @@ const (
 	GameStateUpdate             = 1
 )
 
+// gprc?
 func sendMessageToClient(connection *websocket.Conn, messageType MessageType, message []byte) {
 	var resultingMessage, _ = json.Marshal(Message{
 		Type: byte(messageType),

@@ -15,8 +15,8 @@
     }
 </style>
 <pre id="output"></pre>
-<input id="input" type="text" value="localhost:8080"/>
-<button onclick="connectAndInitialize()">Connect</button>
+<input id="input" type="text" value="localhost"/>
+<button id="connectButton" onclick="connectAndInitialize()">Connect</button>
 <canvas id="c"></canvas>
 <script>
 
@@ -32,6 +32,8 @@
     let c = document.getElementById('c');
 
     let input = document.getElementById("input");
+input.value = document.location.href.replace(/https?:\/\//g, "").replace(":8080/", "");
+
     c.width = levelWidth;
     c.height = levelHeight;
     let ctx = c.getContext('2d');
@@ -48,7 +50,7 @@
     function connectAndInitialize() {
         let trimmedValue = input.value.replace(/https?:\/\//g, "")
 
-        socket = new WebSocket("ws://" + trimmedValue + "/game");
+        socket = new WebSocket("ws://" + trimmedValue + ":8080/game");
         addEventListener("keydown", function (e) {
             keysDown[e.key] = true;
             keyDownCounter++;
@@ -66,7 +68,6 @@
             delete keysDown[e.key];
             delete keysHit[e.key];
         }, false);
-
 
         socket.onopen = () => {
             output.innerHTML += "Status: Connected\n";
@@ -88,7 +89,6 @@
             }
 
         };
-
         setInterval(gameLoop, 30);
     }
 
