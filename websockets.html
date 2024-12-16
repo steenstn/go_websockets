@@ -10,7 +10,7 @@
         image-rendering: pixelated; /* Awesome future-browsers       */
         -ms-interpolation-mode: nearest-neighbor; /* IE                            */
         position: absolute;
-        top: 20%;
+        top: 10%;
         left: 20%;
     }
 </style>
@@ -27,15 +27,18 @@
         TextMessage: 0,
         PositionUpdate: 1,
     };
-    const levelWidth = 640;
-    const levelHeight = 480;
+    const levelWidth = 100;
+    const levelHeight = 100;
+    const scale = 8;
+    const canvasWidth = levelWidth * scale;
+    const canvasHeight = levelHeight * scale;
     let c = document.getElementById('c');
 
     let input = document.getElementById("input");
 input.value = document.location.href.replace(/https?:\/\//g, "").replace(":8080/", "");
 
-    c.width = levelWidth;
-    c.height = levelHeight;
+    c.width = canvasWidth;
+    c.height = canvasHeight;
     let ctx = c.getContext('2d');
     ctx.fillStyle = "#000";
     let output = document.getElementById("output");
@@ -77,6 +80,7 @@ input.value = document.location.href.replace(/https?:\/\//g, "").replace(":8080/
             let json = JSON.parse(e.data)
             let type = json.Type
             let message = atob(json.Msg);
+            console.log(message)
             switch (type) {
                 case MessageType.TextMessage:
                     ctx.fillText(message, 10, 50);
@@ -92,44 +96,18 @@ input.value = document.location.href.replace(/https?:\/\//g, "").replace(":8080/
         setInterval(gameLoop, 30);
     }
 
-    let drawShip = (x, y, direction) => {
-        ctx.fillStyle = "#fff";
-        ctx.beginPath();
-
-        ctx.moveTo(x - 5 + 10 * Math.cos(direction + Math.PI / 2), y - 5 + 10 * Math.sin(direction + Math.PI / 2));
-        ctx.lineTo(x - 5 + 10 * Math.cos(direction - Math.PI / 2), y - 5 + 10 * Math.sin(direction - Math.PI / 2));
-        ctx.lineTo(x - 5 + 10 * Math.cos(direction), y - 5 + 10 * Math.sin(direction));
-        ctx.fill()
-
-    }
 
     function handlePositionUpdate(message) {
         let data = JSON.parse(message);
         //console.log(data)
         ctx.fillStyle = "#000";
-        ctx.fillRect(0, 0, levelWidth, levelHeight);
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
         let players = data.Players;
         for (let i = 0; i < players.length; i++) {
-            let x = players[i].X;
-            let y = players[i].Y;
-            drawShip(x, y, players[i].Direction);
-        }
-
-        ctx.fillStyle = "#b8b8ce"
-        let asteroids = data.Asteroids;
-        for (let i = 0; i < asteroids.length; i++) {
-            let x = asteroids[i].X;
-            let y = asteroids[i].Y;
-            ctx.beginPath();
-            ctx.arc(x, y, asteroids[i].Size * 5, 0, 2 * Math.PI);
-            ctx.fill();
-        }
-        ctx.fillStyle = "#fff"
-        let bullets = data.Bullets;
-        for (let i = 0; i < bullets.length; i++) {
-            let x = bullets[i].X;
-            let y = bullets[i].Y;
-            ctx.fillRect(x, y, 3, 3);
+            for(let j = 0; j < players[i].Tail.length; j++) {
+                ctx.fillStyle = "#fff"
+                ctx.fillRect(players[i].Tail[j].X* scale,players[i].Tail[j].Y * scale, scale, scale);
+            }
         }
     }
 
