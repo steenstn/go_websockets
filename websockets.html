@@ -2,6 +2,7 @@
     body {
         background-color: #444;
     }
+
     canvas {
         border: 1px solid #eee;
         image-rendering: optimizeSpeed; /* Older versions of FF          */
@@ -9,14 +10,32 @@
         image-rendering: -o-crisp-edges; /* OS X & Windows Opera (12.02+) */
         image-rendering: pixelated; /* Awesome future-browsers       */
         -ms-interpolation-mode: nearest-neighbor; /* IE                            */
-        position: absolute;
-        top: 10%;
-        left: 20%;
+
+    }
+
+    .input-button {
+        background-color: #000000;
+        color: #FFFFFF;
+        padding: 10px;
+        border-radius: 10px;
+        -moz-border-radius: 10px;
+        -webkit-border-radius: 10px;
+        margin: 10px
+    }
+
+    .input-section {
+        margin-left: 100px
+    }
+
+    #buttonUp {
+        margin-left: 50px
+    }
+    #buttonDown {
+        margin-left: 42px
     }
 </style>
-<pre id="output"></pre>
 <input id="input" type="text" value="localhost"/>
-<button id="connectButton" onclick="connectAndInitialize()">Connect</button>
+<button id="connectButton" onclick="connectAndInitialize()">Connect</button><br/>
 <canvas id="c"></canvas>
 <script>
 
@@ -35,13 +54,12 @@
     let c = document.getElementById('c');
 
     let input = document.getElementById("input");
-input.value = document.location.href.replace(/https?:\/\//g, "").replace(":8080/", "");
+    input.value = document.location.href.replace(/https?:\/\//g, "").replace(":8080/", "");
 
     c.width = canvasWidth;
     c.height = canvasHeight;
     let ctx = c.getContext('2d');
     ctx.fillStyle = "#000";
-    let output = document.getElementById("output");
 
     let keysDown = {};
     let keysHit = {};
@@ -50,29 +68,37 @@ input.value = document.location.href.replace(/https?:\/\//g, "").replace(":8080/
         connectAndInitialize();
     }
 
+    function pressKey(key) {
+
+        console.log("down " + key)
+        keysDown[key] = true;
+        keyDownCounter++;
+        if (keyDownCounter === 1) {
+            keysHit[key] = true;
+        }
+    }
+
+    function releaseKey(key) {
+        console.log(key)
+        keyDownCounter = 0;
+        delete keysDown[key];
+        delete keysHit[key];
+    }
+
     function connectAndInitialize() {
         let trimmedValue = input.value.replace(/https?:\/\//g, "")
 
         socket = new WebSocket("ws://" + trimmedValue + ":8080/game");
         addEventListener("keydown", function (e) {
-
-            console.log("down " + e.key)
-            keysDown[e.key] = true;
-            keyDownCounter++;
-            if (keyDownCounter === 1) {
-                keysHit[e.key] = true;
-            }
+            pressKey(e.key);
         }, false);
 
         addEventListener("keyup", function (e) {
-            console.log(e.key)
-            keyDownCounter = 0;
-            delete keysDown[e.key];
-            delete keysHit[e.key];
+           releaseKey(e.key) ;
         }, false);
 
         socket.onopen = () => {
-            output.innerHTML += "Status: Connected\n";
+            console.log("Status: Connected");
         };
 
         socket.onmessage = function (e) {
@@ -92,7 +118,7 @@ input.value = document.location.href.replace(/https?:\/\//g, "").replace(":8080/
             }
 
         };
-        setInterval(gameLoop, 30);
+        setInterval(gameLoop, 10);
     }
 
 
@@ -103,14 +129,14 @@ input.value = document.location.href.replace(/https?:\/\//g, "").replace(":8080/
         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
         let players = data.Players;
         for (let i = 0; i < players.length; i++) {
-            for(let j = 0; j < players[i].Tail.length; j++) {
+            for (let j = 0; j < players[i].Tail.length; j++) {
                 ctx.fillStyle = "#fff"
-                ctx.fillRect(players[i].Tail[j].X* scale,players[i].Tail[j].Y * scale, scale, scale);
+                ctx.fillRect(players[i].Tail[j].X * scale, players[i].Tail[j].Y * scale, scale, scale);
             }
         }
 
         let pickups = data.Pickups
-        for(let i=0; i < pickups.length; i++) {
+        for (let i = 0; i < pickups.length; i++) {
             ctx.fillStyle = "#d43";
             ctx.fillRect(pickups[i].X * scale, pickups[i].Y * scale, scale, scale);
         }
@@ -133,4 +159,21 @@ input.value = document.location.href.replace(/https?:\/\//g, "").replace(":8080/
         }
     }
 
+    function changeDirection(direction) {
+        pressKey(direction);
+        setTimeout(() => releaseKey(direction), 31);
+    }
+
 </script>
+<div class="input-section">
+    <div>
+        <button id="buttonUp" class="input-button" onclick="changeDirection('ArrowUp')">Up</button>
+    </div>
+    <div>
+        <button id="buttonLeft" class="input-button" onclick="changeDirection('ArrowLeft')">Left</button>
+        <button id="buttonRight" class="input-button" onclick="changeDirection('ArrowRight')">Right</button>
+    </div>
+    <div>
+        <button id="buttonDown" class="input-button" onclick="changeDirection('ArrowDown')">Down</button>
+    </div>
+</div>

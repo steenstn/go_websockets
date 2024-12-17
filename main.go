@@ -9,6 +9,26 @@ import (
 	"time"
 )
 
+/*
+Bugs
+The input is read "too often" so you if you are going up you can go left and then down before a server tick
+which will cause you to turn back into yourself. Make a queue? add to queue if input is a new type of value
+and read from it in gameloop
+
+TODO
+- Remove clients when connection is dropped. Max number on init?
+
+Pickup ideas
+- Faster speed
+- Slower speed
+- Invisible
+- Bombs
+
+
+Anti cheat
+Send some hash to show code is not modified
+*/
+
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -24,13 +44,12 @@ const (
 )
 
 type Client struct {
-	x          int
-	y          int
-	direction  Direction
-	snake      []TailSegment
-	connection *websocket.Conn
-	alive      bool
-	tailLength int
+	direction       Direction
+	wantedDirection Direction
+	snake           []TailSegment
+	connection      *websocket.Conn
+	alive           bool
+	tailLength      int
 }
 
 type Pickup struct {
@@ -51,24 +70,6 @@ func toTailPosition(tailSegment []TailSegment, tailLength int) []TailPosition {
 		result[i].Y = tailSegment[i].y
 	}
 	return result
-}
-
-type Asteroid struct {
-	position Movable
-	size     int
-	alive    bool
-}
-
-type Movable struct {
-	x         float64
-	y         float64
-	direction float64
-	speed     float64
-}
-
-type Bullet struct {
-	position Movable
-	alive    bool
 }
 
 type PlayerPosition struct {
@@ -98,7 +99,7 @@ const levelWidth = 50
 const levelHeight = 50
 
 var clients = make([]*Client, 0)
-var pickups = make([]Pickup, 3)
+var pickups = make([]Pickup, 5)
 
 var gameRunning = false
 
@@ -113,15 +114,14 @@ func main() {
 func game(responseWriter http.ResponseWriter, request *http.Request) {
 	conn, _ := upgrader.Upgrade(responseWriter, request, nil)
 	client := Client{
-		x:          10 + 15*len(clients),
-		y:          5,
-		direction:  down,
-		connection: conn,
-		alive:      true,
-		snake:      make([]TailSegment, 100),
-		tailLength: 5,
+		direction:       down,
+		wantedDirection: down,
+		connection:      conn,
+		alive:           true,
+		snake:           make([]TailSegment, 100),
+		tailLength:      5,
 	}
-	client.snake[0].x = 10 + 10*len(clients)
+	client.snake[0].x = (10 + 10*len(clients)) % levelWidth
 	client.snake[0].y = 10
 	clients = append(clients, &client)
 
@@ -157,23 +157,19 @@ func inputLoop(c *Client) {
 			println("Input reading failed, player dropped")
 			break
 		}
-		fmt.Printf("%s sent: %s\n", c.connection.RemoteAddr(), string(msg))
+		// TODO sanitize input
+		message := string(msg)
+		fmt.Printf("%s sent: %s\n", c.connection.RemoteAddr(), message)
+
 		var input = string(msg)
-		if input == "up" && c.direction != down {
-			c.direction = up
-		} else if input == "left" && c.direction != right {
-			c.direction = left
-		} else if input == "down" && c.direction != up {
-			c.direction = down
-		} else if input == "right" && c.direction != left {
-			c.direction = right
-		} else if input == "space" {
-			/*bullets = append(bullets, Bullet{Movable{
-				x:         c.position.x,
-				y:         c.position.y,
-				direction: c.position.direction,
-				speed:     math.Sqrt(c.vx*c.vx+c.vy*c.vy) + 1.0,
-			}, true})*/
+		if input == "up" && c.wantedDirection != down {
+			c.wantedDirection = up
+		} else if input == "left" && c.wantedDirection != right {
+			c.wantedDirection = left
+		} else if input == "down" && c.wantedDirection != up {
+			c.wantedDirection = down
+		} else if input == "right" && c.wantedDirection != left {
+			c.wantedDirection = right
 		}
 	}
 }
@@ -187,18 +183,26 @@ func gameLoop() {
 			if clients[i].alive == false {
 				continue
 			}
-
+			input := clients[i].wantedDirection
+			if input == up && clients[i].direction != down {
+				clients[i].direction = up
+			} else if input == left && clients[i].direction != right {
+				clients[i].direction = left
+			} else if input == down && clients[i].direction != up {
+				clients[i].direction = down
+			} else if input == right && clients[i].direction != left {
+				clients[i].direction = right
+			}
 			moveSnake(&clients[i].snake, clients[i].tailLength, clients[i].direction)
 			checkCollisionsWithSnakes(clients[i])
 			checkCollisionsWithPickups(clients[i])
-			/*	clients[i].vy += clients[i].position.speed * math.Sin(clients[i].position.direction)
-				clients[i].position.x += clients[i].vx
-				clients[i].position.y += clients[i].vy*/
+
 			wrapAround(clients[i], levelWidth, levelHeight, 1)
 
 			clientPositions = append(clientPositions, PlayerPosition{clients[i].snake[0].x, clients[i].snake[0].y, clients[i].direction, toTailPosition(clients[i].snake, clients[i].tailLength)})
 		}
 
+		// Update pickups
 		pickupPositions := make([]PickupPosition, len(pickups))
 		for i := 0; i < len(pickups); i++ {
 			pickupPositions[i].X = pickups[i].x
@@ -217,7 +221,7 @@ func gameLoop() {
 
 func moveSnake(snakePointer *[]TailSegment, tailLength int, direction Direction) {
 	var snake = *snakePointer
-	// Move the tail
+	// Move the tailsegments, following the segment before it
 	for i := tailLength; i > 0; i-- {
 		snake[i].x = snake[i-1].x
 		snake[i].y = snake[i-1].y
@@ -282,10 +286,6 @@ func wrapAround(position *Client, xMax int, yMax int, buffer int) {
 	if position.snake[0].y > yMax+buffer {
 		position.snake[0].y = -buffer
 	}
-}
-
-func overlap(x float64, y float64, width float64, height float64, x2 float64, y2 float64, width2 float64, height2 float64) bool {
-	return x < x2+width2 && x+width > x2 && y < y2+height2 && y+height > y2
 }
 
 func broadcastGameState(gameState GameState) {
