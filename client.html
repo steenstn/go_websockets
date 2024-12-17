@@ -45,19 +45,20 @@
     <canvas id="c"></canvas>
 </div>
 <script>
-
+"use strict";
     let autoConnect = true;
     let socket;
     let keyDownCounter = 0;
     const MessageType = {
         TextMessage: 0,
-        PositionUpdate: 1,
+        GameStateUpdate: 1,
+        GameSetup: 2
     };
-    const levelWidth = 50;
-    const levelHeight = 50;
+    let levelWidth = 50;
+    let levelHeight = 50;
     const scale = 8;
-    const canvasWidth = levelWidth * scale;
-    const canvasHeight = levelHeight * scale;
+    let canvasWidth = levelWidth * scale;
+    let canvasHeight = levelHeight * scale;
     let c = document.getElementById('c');
 
     let input = document.getElementById("input");
@@ -91,6 +92,10 @@
         delete keysHit[key];
     }
 
+     function parseMessage(message) {
+        return JSON.parse(message);
+    }
+
     function hostGame() {
         console.log("Hosting game");
         let trimmedValue = input.value.replace(/https?:\/\//g, "")
@@ -108,7 +113,7 @@
         let trimmedValue = input.value.replace(/https?:\/\//g, "")
 
         setupKeyListeners();
-        setupSocket(trimmedValue, "game");
+        setupSocket(trimmedValue, "join");
         setInterval(gameLoop, 10);
     }
 
@@ -119,7 +124,7 @@
         };
 
         socket.onmessage = function (e) {
-            let json = JSON.parse(e.data)
+            let json = parseMessage(e.data)
             let type = json.Type
             let message = atob(json.Msg);
             //console.log(message)
@@ -127,8 +132,11 @@
                 case MessageType.TextMessage:
                     ctx.fillText(message, 10, 50);
                     break;
-                case MessageType.PositionUpdate:
-                    handlePositionUpdate(message);
+                case MessageType.GameStateUpdate:
+                    handleGameStateUpdate(message);
+                    break;
+                case MessageType.GameSetup:
+                    handleGameSetup(message);
                     break;
                 default:
                     console.log("Unknown type " + type)
@@ -138,20 +146,17 @@
     }
 
     function setupKeyListeners() {
-
-        addEventListener("keydown", function (e) {
+        addEventListener("keydown",  (e) => {
             pressKey(e.key);
         }, false);
 
-        addEventListener("keyup", function (e) {
+        addEventListener("keyup",  (e) => {
             releaseKey(e.key);
         }, false);
-
     }
 
-
-    function handlePositionUpdate(message) {
-        let data = JSON.parse(message);
+    function handleGameStateUpdate(message) {
+        let data = parseMessage(message);
         //console.log(data)
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
@@ -169,6 +174,17 @@
             ctx.fillRect(pickups[i].X * scale, pickups[i].Y * scale, scale, scale);
         }
     }
+
+    function handleGameSetup(message) {
+        let data = parseMessage(message)
+        levelWidth = data.LevelWidth;
+        levelHeight = data.LevelHeight;
+        canvasWidth = levelWidth * scale;
+        canvasHeight = levelHeight * scale;
+        c.width = canvasWidth;
+        c.height = canvasHeight;
+    }
+
 
     function gameLoop() {
         if ("ArrowUp" in keysDown) {

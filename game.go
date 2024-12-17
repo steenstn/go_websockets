@@ -25,6 +25,11 @@ const (
 	right           = 3
 )
 
+type GameSession struct {
+	LevelWidth  int
+	LevelHeight int
+}
+
 var levelWidth = 50
 var levelHeight = 50
 

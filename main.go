@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"go_project/utils"
 	"math/rand"
 	"net/http"
 )
@@ -86,7 +87,7 @@ var clients = make([]*Client, 0)
 var pickups = make([]Pickup, 5)
 
 func main() {
-	http.HandleFunc("/game", game)
+	http.HandleFunc("/join", joinGame)
 	http.HandleFunc("/host", host)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "client.html")
@@ -101,11 +102,11 @@ func host(responseWriter http.ResponseWriter, request *http.Request) {
 
 	gameInitRequest := GameInitRequest{}
 	json.Unmarshal(msg, &gameInitRequest)
-
-	println(gameInitRequest.LevelWidth)
+	levelWidth = utils.Clamp(gameInitRequest.LevelWidth, 40, 200)
+	levelHeight = utils.Clamp(gameInitRequest.LevelHeight, 40, 100)
 }
 
-func game(responseWriter http.ResponseWriter, request *http.Request) {
+func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 	conn, _ := upgrader.Upgrade(responseWriter, request, nil)
 	client := Client{
 		direction:       down,
@@ -119,6 +120,10 @@ func game(responseWriter http.ResponseWriter, request *http.Request) {
 	client.snake[0].y = 10
 	clients = append(clients, &client)
 
+	gameSetup := GameSetupMessage{LevelWidth: levelWidth, LevelHeight: levelHeight}
+	msg, _ := json.Marshal(gameSetup)
+	sendMessageToClient(client.connection, GameSetup, msg)
+
 	go inputLoop(&client)
 	if gameRunning || len(clients) < 2 {
 		return
@@ -131,7 +136,7 @@ func game(responseWriter http.ResponseWriter, request *http.Request) {
 }
 
 func initGame() {
-	println("Init game")
+	println("Init joinGame")
 
 	for i := 0; i < len(pickups); i++ {
 		pickups[i].pickupType = 0
