@@ -5,6 +5,31 @@ import (
 	"time"
 )
 
+type Pickup struct {
+	x          int
+	y          int
+	pickupType int
+}
+
+type TailSegment struct {
+	x int
+	y int
+}
+
+type Direction int
+
+const (
+	up    Direction = 0
+	left            = 1
+	down            = 2
+	right           = 3
+)
+
+var levelWidth = 50
+var levelHeight = 50
+
+var gameRunning = false
+
 func gameLoop() {
 	pickupPositions := make([]PickupMessage, len(pickups))
 	for {
@@ -31,7 +56,7 @@ func gameLoop() {
 
 			wrapAround(clients[i], levelWidth, levelHeight, 1)
 
-			clientPositions = append(clientPositions, PlayerMessage{clients[i].snake[0].x, clients[i].snake[0].y, clients[i].direction, toTailPosition(clients[i].snake, clients[i].tailLength)})
+			clientPositions = append(clientPositions, PlayerMessage{clients[i].snake[0].x, clients[i].snake[0].y, clients[i].direction, toTailMessage(clients[i].snake, clients[i].tailLength)})
 		}
 
 		// Update pickups
@@ -40,7 +65,7 @@ func gameLoop() {
 			pickupPositions[i].Y = pickups[i].y
 		}
 
-		gameState := GameState{
+		gameState := GameStateMessage{
 			Players: clientPositions,
 			Pickups: pickupPositions,
 		}
@@ -52,7 +77,7 @@ func gameLoop() {
 
 func moveSnake(snakePointer *[]TailSegment, tailLength int, direction Direction) {
 	var snake = *snakePointer
-	// Move the tailsegments, following the segment before it
+	// Move the tail segments, following the segment before it
 	for i := tailLength; i > 0; i-- {
 		snake[i].x = snake[i-1].x
 		snake[i].y = snake[i-1].y

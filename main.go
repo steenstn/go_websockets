@@ -31,15 +31,6 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-type Direction int
-
-const (
-	up    Direction = 0
-	left            = 1
-	down            = 2
-	right           = 3
-)
-
 type Client struct {
 	direction       Direction
 	wantedDirection Direction
@@ -49,18 +40,7 @@ type Client struct {
 	tailLength      int
 }
 
-type Pickup struct {
-	x          int
-	y          int
-	pickupType int
-}
-
-type TailSegment struct {
-	x int
-	y int
-}
-
-func toTailPosition(tailSegment []TailSegment, tailLength int) []TailMessage {
+func toTailMessage(tailSegment []TailSegment, tailLength int) []TailMessage {
 	result := make([]TailMessage, tailLength)
 	for i := 0; i < tailLength; i++ {
 		result[i].X = tailSegment[i].x
@@ -87,7 +67,7 @@ type PickupMessage struct {
 	Type int
 }
 
-type GameState struct {
+type GameStateMessage struct {
 	Players []PlayerMessage
 	Pickups []PickupMessage
 }
@@ -102,13 +82,8 @@ type GameSetupMessage struct {
 	LevelHeight int
 }
 
-var levelWidth = 50
-var levelHeight = 50
-
 var clients = make([]*Client, 0)
 var pickups = make([]Pickup, 5)
-
-var gameRunning = false
 
 func main() {
 	http.HandleFunc("/game", game)
@@ -199,7 +174,7 @@ func inputLoop(c *Client) {
 	}
 }
 
-func broadcastGameState(gameState GameState) {
+func broadcastGameState(gameState GameStateMessage) {
 	for i := 0; i < len(clients); i++ {
 		if !clients[i].alive {
 			continue
