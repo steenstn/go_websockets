@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/websocket"
 )
 
@@ -15,6 +16,7 @@ type MessageType byte
 const (
 	TextMessage     MessageType = 0
 	GameStateUpdate             = 1
+	GameSetup                   = 2
 )
 
 // gprc?
@@ -25,7 +27,7 @@ func sendMessageToClient(connection *websocket.Conn, messageType MessageType, me
 	})
 	err := connection.WriteMessage(1, resultingMessage)
 	if err != nil {
-		println("Error when sending message to user")
+		fmt.Printf("Error when sending message to user: %s", err)
 		return err
 	}
 	return nil

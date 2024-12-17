@@ -1,16 +1,10 @@
 <style>
     body {
-        background-color: #444;
+        background-color: #aaa;
     }
 
     canvas {
         border: 1px solid #eee;
-        image-rendering: optimizeSpeed; /* Older versions of FF          */
-        image-rendering: -moz-crisp-edges; /* FF 6.0+                       */
-        image-rendering: -o-crisp-edges; /* OS X & Windows Opera (12.02+) */
-        image-rendering: pixelated; /* Awesome future-browsers       */
-        -ms-interpolation-mode: nearest-neighbor; /* IE                            */
-
     }
 
     .input-button {
@@ -30,13 +24,26 @@
     #buttonUp {
         margin-left: 50px
     }
+
     #buttonDown {
         margin-left: 42px
     }
 </style>
 <input id="input" type="text" value="localhost"/>
-<button id="connectButton" onclick="connectAndInitialize()">Connect</button><br/>
-<canvas id="c"></canvas>
+<button id="hostButton" onclick="hostGame()">Host</button>
+<button id="connectButton" onclick="joinGame()">Connect</button><br/><br/>
+
+<div>
+    <label for="levelWidth">Level width</label>
+    <input id="levelWidth" type="number" value="50"/>
+</div>
+<div>
+    <label for="levelHeight">Level height</label>
+    <input id="levelHeight" type="number" value="50"/>
+</div>
+<div>
+    <canvas id="c"></canvas>
+</div>
 <script>
 
     let autoConnect = true;
@@ -65,11 +72,10 @@
     let keysHit = {};
 
     if (autoConnect) {
-        connectAndInitialize();
+        joinGame();
     }
 
     function pressKey(key) {
-
         console.log("down " + key)
         keysDown[key] = true;
         keyDownCounter++;
@@ -85,18 +91,29 @@
         delete keysHit[key];
     }
 
-    function connectAndInitialize() {
+    function hostGame() {
+        console.log("Hosting game");
+        let trimmedValue = input.value.replace(/https?:\/\//g, "")
+        setupKeyListeners();
+        setupSocket(trimmedValue, "host");
+        socket.onopen = () => {
+            let inputWidth = document.getElementById("levelWidth").value
+            let inputHeight = document.getElementById("levelHeight").value
+            socket.send(`{"levelWidth":${inputWidth}, "levelHeight":${inputHeight}}`)
+        };
+        setInterval(gameLoop, 10);
+    }
+
+    function joinGame() {
         let trimmedValue = input.value.replace(/https?:\/\//g, "")
 
-        socket = new WebSocket("ws://" + trimmedValue + ":8080/game");
-        addEventListener("keydown", function (e) {
-            pressKey(e.key);
-        }, false);
+        setupKeyListeners();
+        setupSocket(trimmedValue, "game");
+        setInterval(gameLoop, 10);
+    }
 
-        addEventListener("keyup", function (e) {
-           releaseKey(e.key) ;
-        }, false);
-
+    function setupSocket(hostUrl, endpoint) {
+        socket = new WebSocket("ws://" + hostUrl + ":8080/" + endpoint);
         socket.onopen = () => {
             console.log("Status: Connected");
         };
@@ -118,7 +135,18 @@
             }
 
         };
-        setInterval(gameLoop, 10);
+    }
+
+    function setupKeyListeners() {
+
+        addEventListener("keydown", function (e) {
+            pressKey(e.key);
+        }, false);
+
+        addEventListener("keyup", function (e) {
+            releaseKey(e.key);
+        }, false);
+
     }
 
 

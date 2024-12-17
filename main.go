@@ -6,17 +6,14 @@ import (
 	"github.com/gorilla/websocket"
 	"math/rand"
 	"net/http"
-	"time"
 )
 
 /*
 Bugs
-The input is read "too often" so you if you are going up you can go left and then down before a server tick
-which will cause you to turn back into yourself. Make a queue? add to queue if input is a new type of value
-and read from it in gameloop
 
 TODO
 - Remove clients when connection is dropped. Max number on init?
+-
 
 Pickup ideas
 - Faster speed
@@ -63,8 +60,8 @@ type TailSegment struct {
 	y int
 }
 
-func toTailPosition(tailSegment []TailSegment, tailLength int) []TailPosition {
-	result := make([]TailPosition, tailLength)
+func toTailPosition(tailSegment []TailSegment, tailLength int) []TailMessage {
+	result := make([]TailMessage, tailLength)
 	for i := 0; i < tailLength; i++ {
 		result[i].X = tailSegment[i].x
 		result[i].Y = tailSegment[i].y
@@ -72,31 +69,41 @@ func toTailPosition(tailSegment []TailSegment, tailLength int) []TailPosition {
 	return result
 }
 
-type PlayerPosition struct {
+type PlayerMessage struct {
 	X         int
 	Y         int
 	Direction Direction
-	Tail      []TailPosition
+	Tail      []TailMessage
 }
 
-type TailPosition struct {
+type TailMessage struct {
 	X int
 	Y int
 }
 
-type PickupPosition struct {
+type PickupMessage struct {
 	X    int
 	Y    int
 	Type int
 }
 
 type GameState struct {
-	Players []PlayerPosition
-	Pickups []PickupPosition
+	Players []PlayerMessage
+	Pickups []PickupMessage
 }
 
-const levelWidth = 50
-const levelHeight = 50
+type GameInitRequest struct {
+	LevelWidth  int
+	LevelHeight int
+}
+
+type GameSetupMessage struct {
+	LevelWidth  int
+	LevelHeight int
+}
+
+var levelWidth = 50
+var levelHeight = 50
 
 var clients = make([]*Client, 0)
 var pickups = make([]Pickup, 5)
@@ -105,10 +112,22 @@ var gameRunning = false
 
 func main() {
 	http.HandleFunc("/game", game)
+	http.HandleFunc("/host", host)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "websockets.html")
+		http.ServeFile(w, r, "client.html")
 	})
 	http.ListenAndServe(":8080", nil)
+}
+
+func host(responseWriter http.ResponseWriter, request *http.Request) {
+	println("Hosting")
+	conn, _ := upgrader.Upgrade(responseWriter, request, nil)
+	_, msg, _ := conn.ReadMessage()
+
+	gameInitRequest := GameInitRequest{}
+	json.Unmarshal(msg, &gameInitRequest)
+
+	println(gameInitRequest.LevelWidth)
 }
 
 func game(responseWriter http.ResponseWriter, request *http.Request) {
@@ -155,9 +174,15 @@ func inputLoop(c *Client) {
 		_, msg, err := c.connection.ReadMessage()
 		if err != nil {
 			println("Input reading failed, player dropped")
+			c.alive = false
 			break
 		}
-		// TODO sanitize input
+
+		// TODO More sanitation?
+		if len(msg) > 1000 {
+			println("Too long message, not processing")
+			continue
+		}
 		message := string(msg)
 		fmt.Printf("%s sent: %s\n", c.connection.RemoteAddr(), message)
 
@@ -171,120 +196,6 @@ func inputLoop(c *Client) {
 		} else if input == "right" && c.wantedDirection != left {
 			c.wantedDirection = right
 		}
-	}
-}
-
-func gameLoop() {
-	for {
-		clientPositions := make([]PlayerPosition, 0)
-
-		// Update snakes
-		for i := 0; i < len(clients); i++ {
-			if clients[i].alive == false {
-				continue
-			}
-			input := clients[i].wantedDirection
-			if input == up && clients[i].direction != down {
-				clients[i].direction = up
-			} else if input == left && clients[i].direction != right {
-				clients[i].direction = left
-			} else if input == down && clients[i].direction != up {
-				clients[i].direction = down
-			} else if input == right && clients[i].direction != left {
-				clients[i].direction = right
-			}
-			moveSnake(&clients[i].snake, clients[i].tailLength, clients[i].direction)
-			checkCollisionsWithSnakes(clients[i])
-			checkCollisionsWithPickups(clients[i])
-
-			wrapAround(clients[i], levelWidth, levelHeight, 1)
-
-			clientPositions = append(clientPositions, PlayerPosition{clients[i].snake[0].x, clients[i].snake[0].y, clients[i].direction, toTailPosition(clients[i].snake, clients[i].tailLength)})
-		}
-
-		// Update pickups
-		pickupPositions := make([]PickupPosition, len(pickups))
-		for i := 0; i < len(pickups); i++ {
-			pickupPositions[i].X = pickups[i].x
-			pickupPositions[i].Y = pickups[i].y
-		}
-
-		gameState := GameState{
-			Players: clientPositions,
-			Pickups: pickupPositions,
-		}
-
-		broadcastGameState(gameState)
-		time.Sleep(80 * time.Millisecond)
-	}
-}
-
-func moveSnake(snakePointer *[]TailSegment, tailLength int, direction Direction) {
-	var snake = *snakePointer
-	// Move the tailsegments, following the segment before it
-	for i := tailLength; i > 0; i-- {
-		snake[i].x = snake[i-1].x
-		snake[i].y = snake[i-1].y
-	}
-
-	// Move the head
-	switch direction {
-	case up:
-		snake[0].y--
-	case left:
-		snake[0].x--
-	case down:
-		snake[0].y++
-	case right:
-		snake[0].x++
-	}
-}
-
-func checkCollisionsWithSnakes(client *Client) {
-	headX := client.snake[0].x
-	headY := client.snake[0].y
-
-	for i := 0; i < len(clients); i++ {
-		if clients[i].alive == false {
-			continue
-		}
-		snakeToCheck := &clients[i].snake
-		for j := 1; j < clients[i].tailLength; j++ {
-			if headX == (*snakeToCheck)[j].x && headY == (*snakeToCheck)[j].y {
-				client.alive = false
-				println("collision")
-			}
-		}
-	}
-}
-
-func checkCollisionsWithPickups(client *Client) {
-	for i := 0; i < len(pickups); i++ {
-		if client.snake[0].x == pickups[i].x && client.snake[0].y == pickups[i].y {
-			// Grow snake
-			client.tailLength++
-			client.snake[client.tailLength].x = client.snake[client.tailLength-1].x
-			client.snake[client.tailLength].y = client.snake[client.tailLength-1].y
-
-			// Reposition pickup
-			pickups[i].x = rand.Intn(2 + levelWidth - 4)
-			pickups[i].y = rand.Intn(2 + levelHeight - 4)
-		}
-	}
-}
-
-func wrapAround(position *Client, xMax int, yMax int, buffer int) {
-	if position.snake[0].x > xMax+buffer {
-		position.snake[0].x = -buffer
-	}
-	if position.snake[0].x < -buffer {
-		position.snake[0].x = xMax + buffer
-	}
-	if position.snake[0].y < -buffer {
-		position.snake[0].y = yMax + buffer
-	}
-	if position.snake[0].y > yMax+buffer {
-		position.snake[0].y = -buffer
 	}
 }
 
