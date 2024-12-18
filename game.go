@@ -36,6 +36,7 @@ var levelHeight = 50
 var gameRunning = false
 
 func gameLoop() {
+
 	pickupPositions := make([]PickupMessage, len(pickups))
 	for {
 		clientPositions := make([]PlayerMessage, 0)
@@ -59,7 +60,7 @@ func gameLoop() {
 			checkCollisionsWithSnakes(clients[i])
 			checkCollisionsWithPickups(clients[i])
 
-			wrapAround(clients[i], levelWidth, levelHeight, 1)
+			wrapAround(clients[i], levelWidth, levelHeight, 0)
 
 			clientPositions = append(clientPositions, PlayerMessage{clients[i].snake[0].x, clients[i].snake[0].y, clients[i].direction, toTailMessage(clients[i].snake, clients[i].tailLength)})
 		}

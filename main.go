@@ -96,6 +96,10 @@ func main() {
 }
 
 func host(responseWriter http.ResponseWriter, request *http.Request) {
+	if gameRunning {
+		println("Game already running")
+		return
+	}
 	println("Hosting")
 	conn, _ := upgrader.Upgrade(responseWriter, request, nil)
 	_, msg, _ := conn.ReadMessage()
@@ -104,35 +108,45 @@ func host(responseWriter http.ResponseWriter, request *http.Request) {
 	json.Unmarshal(msg, &gameInitRequest)
 	levelWidth = utils.Clamp(gameInitRequest.LevelWidth, 40, 200)
 	levelHeight = utils.Clamp(gameInitRequest.LevelHeight, 40, 100)
+	client := createClient(conn)
+	clients = append(clients, client)
+	go inputLoop(client)
+
+	initGame()
+	gameRunning = true
+	gameLoop()
 }
 
 func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
+	if gameRunning == false {
+		println("No game running")
+		return
+	}
 	conn, _ := upgrader.Upgrade(responseWriter, request, nil)
+	client := createClient(conn)
+	clients = append(clients, client)
+
+	gameSetup := GameSetupMessage{LevelWidth: levelWidth, LevelHeight: levelHeight}
+	msg, _ := json.Marshal(gameSetup)
+	sendMessageToClient(client.connection, GameSetup, msg)
+
+	go inputLoop(client)
+	println("Game started")
+
+}
+
+func createClient(connection *websocket.Conn) *Client {
 	client := Client{
 		direction:       down,
 		wantedDirection: down,
-		connection:      conn,
+		connection:      connection,
 		alive:           true,
 		snake:           make([]TailSegment, 100),
 		tailLength:      5,
 	}
 	client.snake[0].x = (10 + 10*len(clients)) % levelWidth
 	client.snake[0].y = 10
-	clients = append(clients, &client)
-
-	gameSetup := GameSetupMessage{LevelWidth: levelWidth, LevelHeight: levelHeight}
-	msg, _ := json.Marshal(gameSetup)
-	sendMessageToClient(client.connection, GameSetup, msg)
-
-	go inputLoop(&client)
-	if gameRunning || len(clients) < 2 {
-		return
-	}
-	gameRunning = true
-	println("Game started")
-	initGame()
-	gameLoop()
-
+	return &client
 }
 
 func initGame() {

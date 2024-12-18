@@ -46,7 +46,6 @@
 </div>
 <script>
 "use strict";
-    let autoConnect = true;
     let socket;
     let keyDownCounter = 0;
     const MessageType = {
@@ -71,10 +70,6 @@
 
     let keysDown = {};
     let keysHit = {};
-
-    if (autoConnect) {
-        joinGame();
-    }
 
     function pressKey(key) {
         console.log("down " + key)
