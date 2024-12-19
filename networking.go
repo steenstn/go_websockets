@@ -28,7 +28,7 @@ func sendMessageToClient(connection *websocket.Conn, messageType MessageType, me
 	})
 	err := connection.WriteMessage(1, resultingMessage)
 	if err != nil {
-		fmt.Printf("Error when sending message to user: %s", err)
+		fmt.Printf("Error when sending message to user: %s\n", err)
 		return err
 	}
 	return nil

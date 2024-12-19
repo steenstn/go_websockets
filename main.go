@@ -7,6 +7,7 @@ import (
 	"go_project/requests"
 	"math/rand"
 	"net/http"
+	"time"
 )
 
 /*
@@ -39,6 +40,7 @@ type Client struct {
 	wantedDirection Direction
 	snake           []TailSegment
 	connection      *websocket.Conn
+	connected       bool
 	alive           bool
 	tailLength      int
 	snakeColor      string
@@ -97,7 +99,6 @@ var pickups = make([]Pickup, 5)
 
 func main() {
 	initGame()
-	gameRunning = true
 	go gameLoop()
 
 	http.HandleFunc("/join", joinGame)
@@ -107,11 +108,22 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }
 
-func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
-	if gameRunning == false {
-		println("No game running")
-		return
+// Do this with channels instead?
+func gameLoop() {
+	for {
+		gameState := gameTick(clients)
+
+		broadcastGameState(gameState)
+		time.Sleep(80 * time.Millisecond)
 	}
+}
+
+/*
+Note: CheckOrigin in Upgrader allows all connections.
+In a production environment, make sure to validate the origin to avoid Cross-Site WebSocket Hijacking.
+*/
+func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
+
 	conn, _ := upgrader.Upgrade(responseWriter, request, nil)
 	_, msg, msgError := conn.ReadMessage()
 
@@ -133,6 +145,9 @@ func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 	playerListUpdate := PlayerListUpdateMessage{make([]PlayerListEntry, 0)}
 
 	for i := 0; i < len(clients); i++ {
+		if !clients[i].connected {
+			continue
+		}
 		playerListUpdate.Entries = append(playerListUpdate.Entries, PlayerListEntry{
 			Name:  clients[i].name,
 			Color: clients[i].snakeColor,
@@ -151,6 +166,7 @@ func createClient(connection *websocket.Conn, snakeColor string, name string) *C
 		wantedDirection: down,
 		connection:      connection,
 		alive:           true,
+		connected:       true,
 		snake:           make([]TailSegment, 100),
 		tailLength:      5,
 		snakeColor:      snakeColor,
@@ -173,14 +189,16 @@ func initGame() {
 
 func inputLoop(c *Client) {
 	println("Starting input loop")
+
 	for {
-		if c.alive == false {
+		if c.connected == false {
 			break
 		}
 		_, msg, err := c.connection.ReadMessage()
 		if err != nil {
 			println("Input reading failed, player dropped")
 			c.alive = false
+			//c.connection.Close()
 			break
 		}
 
@@ -208,13 +226,14 @@ func inputLoop(c *Client) {
 func broadcastGameState(gameState GameStateMessage) {
 	var message, _ = json.Marshal(gameState)
 	for i := 0; i < len(clients); i++ {
-		if !clients[i].alive {
+		if !clients[i].connected {
+			clients[i].connection.Close()
 			continue
 		}
 		var err = sendMessageToClient(clients[i].connection, GameStateUpdate, message)
 		if err != nil {
 			closeError := clients[i].connection.Close()
-			clients[i].alive = false
+			clients[i].connected = false
 			if closeError != nil {
 				println("Failed to close connection")
 			}
@@ -230,7 +249,7 @@ func broadcastMessageToActiveClients(clients *[]*Client, messageType MessageType
 
 	for i := 0; i < len(*clients); i++ {
 		client := (*clients)[i]
-		if !client.alive {
+		if !client.connected {
 			continue
 		}
 

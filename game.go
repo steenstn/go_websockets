@@ -2,7 +2,6 @@ package main
 
 import (
 	"math/rand"
-	"time"
 )
 
 type Pickup struct {
@@ -28,56 +27,50 @@ const (
 var levelWidth = 80
 var levelHeight = 60
 
-var gameRunning = false
-
-func gameLoop() {
+func gameTick(clients []*Client) GameStateMessage {
 
 	pickupPositions := make([]PickupMessage, len(pickups))
-	for {
-		clientPositions := make([]PlayerMessage, 0)
+	clientPositions := make([]PlayerMessage, 0)
 
-		// Update snakes
-		for i := 0; i < len(clients); i++ {
-			if clients[i].alive == false {
-				continue
-			}
-			input := clients[i].wantedDirection
-			if input == up && clients[i].direction != down {
-				clients[i].direction = up
-			} else if input == left && clients[i].direction != right {
-				clients[i].direction = left
-			} else if input == down && clients[i].direction != up {
-				clients[i].direction = down
-			} else if input == right && clients[i].direction != left {
-				clients[i].direction = right
-			}
-			moveSnake(&clients[i].snake, clients[i].tailLength, clients[i].direction)
-			checkCollisionsWithSnakes(clients[i])
-			checkCollisionsWithPickups(clients[i])
-
-			wrapAround(clients[i], levelWidth, levelHeight, 0)
-
-			clientPositions = append(clientPositions, PlayerMessage{X: clients[i].snake[0].x,
-				Y:         clients[i].snake[0].y,
-				Direction: clients[i].direction,
-				Color:     clients[i].snakeColor,
-				Tail:      toTailMessage(clients[i].snake, clients[i].tailLength)})
+	// Update snakes
+	for i := 0; i < len(clients); i++ {
+		if clients[i].alive == false {
+			continue
 		}
-
-		// Update pickups
-		for i := 0; i < len(pickups); i++ {
-			pickupPositions[i].X = pickups[i].x
-			pickupPositions[i].Y = pickups[i].y
+		input := clients[i].wantedDirection
+		if input == up && clients[i].direction != down {
+			clients[i].direction = up
+		} else if input == left && clients[i].direction != right {
+			clients[i].direction = left
+		} else if input == down && clients[i].direction != up {
+			clients[i].direction = down
+		} else if input == right && clients[i].direction != left {
+			clients[i].direction = right
 		}
+		moveSnake(&clients[i].snake, clients[i].tailLength, clients[i].direction)
+		checkCollisionsWithSnakes(clients[i])
+		checkCollisionsWithPickups(clients[i])
 
-		gameState := GameStateMessage{
-			Players: clientPositions,
-			Pickups: pickupPositions,
-		}
+		wrapAround(clients[i], levelWidth, levelHeight, 0)
 
-		broadcastGameState(gameState)
-		time.Sleep(80 * time.Millisecond)
+		clientPositions = append(clientPositions, PlayerMessage{X: clients[i].snake[0].x,
+			Y:         clients[i].snake[0].y,
+			Direction: clients[i].direction,
+			Color:     clients[i].snakeColor,
+			Tail:      toTailMessage(clients[i].snake, clients[i].tailLength)})
 	}
+
+	// Update pickups
+	for i := 0; i < len(pickups); i++ {
+		pickupPositions[i].X = pickups[i].x
+		pickupPositions[i].Y = pickups[i].y
+	}
+
+	gameState := GameStateMessage{
+		Players: clientPositions,
+		Pickups: pickupPositions,
+	}
+	return gameState
 }
 
 func moveSnake(snakePointer *[]TailSegment, tailLength int, direction Direction) {
