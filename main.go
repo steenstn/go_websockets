@@ -193,13 +193,13 @@ func inputLoop(c *Client) {
 		fmt.Printf("%s sent: %s\n", c.connection.RemoteAddr(), message)
 
 		var input = string(msg)
-		if input == "up" && c.wantedDirection != down {
+		if input == "U" && c.wantedDirection != down {
 			c.wantedDirection = up
-		} else if input == "left" && c.wantedDirection != right {
+		} else if input == "L" && c.wantedDirection != right {
 			c.wantedDirection = left
-		} else if input == "down" && c.wantedDirection != up {
+		} else if input == "D" && c.wantedDirection != up {
 			c.wantedDirection = down
-		} else if input == "right" && c.wantedDirection != left {
+		} else if input == "R" && c.wantedDirection != left {
 			c.wantedDirection = right
 		}
 	}

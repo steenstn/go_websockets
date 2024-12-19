@@ -34,13 +34,8 @@
 
 </style>
 <input id="input" type="text" value="localhost"/>
-<button id="hostButton" onclick="hostGame()">Host</button>
 <button id="connectButton" onclick="joinGame()">Connect</button><br/><br/>
 
-<div>
-    <label for="levelWidth">Level width</label>
-    <input id="levelWidth" type="number" value="50"/>
-</div>
 <div>
     <label for="levelHeight">Level height</label>
     <input id="levelHeight" type="number" value="50"/>
@@ -117,21 +112,6 @@
 
     function parseMessage(message) {
         return JSON.parse(message);
-    }
-
-    function hostGame() {
-        console.log("Hosting game");
-        let trimmedValue = input.value.replace(/https?:\/\//g, "")
-        setupKeyListeners();
-        setupSocket(trimmedValue, "host");
-        socket.onopen = () => {
-            let inputWidth = document.getElementById("levelWidth").value
-            let inputHeight = document.getElementById("levelHeight").value
-            let snakeColor = document.getElementById("snakeColor").value
-            let snakeName = document.getElementById("snakeName").value;
-            socket.send(`{"levelWidth":${inputWidth}, "levelHeight":${inputHeight}, "snakeColor": "${snakeColor}", "snakeName":"${snakeName}"}`)
-        };
-        setInterval(gameLoop, 10);
     }
 
     function joinGame() {
@@ -213,7 +193,7 @@
 
         let pickups = data.Pickups
         for (let i = 0; i < pickups.length; i++) {
-            ctx.fillStyle = "#4b6";
+            ctx.fillStyle = "#4e6";
             ctx.fillRect(pickups[i].X * scale, pickups[i].Y * scale, scale, scale);
         }
     }
@@ -233,7 +213,6 @@
         let data = parseMessage(message)
         let entries = data.Entries;
 
-        console.log()
         let playerList = document.getElementById("playerList");
         playerList.textContent = '';
         for(let i = 0; i < entries.length; i++) {
@@ -246,19 +225,19 @@
 
     function gameLoop() {
         if ("ArrowUp" in keysDown) {
-            socket.send("up");
+            socket.send("U");
         } else if ("ArrowDown" in keysDown) {
-            socket.send("down");
+            socket.send("D");
         }
         if ("ArrowLeft" in keysDown) {
-            socket.send("left");
+            socket.send("L");
         } else if ("ArrowRight" in keysDown) {
-            socket.send("right");
+            socket.send("R");
         }
-        if ("x" in keysHit) {
+        /*if ("x" in keysHit) {
             socket.send("space");
             delete keysHit["x"];
-        }
+        }*/
     }
 
     function changeDirection(direction) {
