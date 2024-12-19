@@ -62,7 +62,7 @@ func gameLoop() {
 
 			wrapAround(clients[i], levelWidth, levelHeight, 0)
 
-			clientPositions = append(clientPositions, PlayerMessage{clients[i].snake[0].x, clients[i].snake[0].y, clients[i].direction, toTailMessage(clients[i].snake, clients[i].tailLength)})
+			clientPositions = append(clientPositions, PlayerMessage{clients[i].snake[0].x, clients[i].snake[0].y, clients[i].direction, clients[i].snakeColor, toTailMessage(clients[i].snake, clients[i].tailLength)})
 		}
 
 		// Update pickups

@@ -42,6 +42,10 @@
     <input id="levelHeight" type="number" value="50"/>
 </div>
 <div>
+    <label for="snakeColor">Snake color</label>
+    <input type="color" id="snakeColor"  value="#ffffff">
+</div>
+<div>
     <canvas id="c"></canvas>
 </div>
 <script>
@@ -99,7 +103,8 @@
         socket.onopen = () => {
             let inputWidth = document.getElementById("levelWidth").value
             let inputHeight = document.getElementById("levelHeight").value
-            socket.send(`{"levelWidth":${inputWidth}, "levelHeight":${inputHeight}}`)
+            let snakeColor = document.getElementById("snakeColor").value
+            socket.send(`{"levelWidth":${inputWidth}, "levelHeight":${inputHeight}, "snakeColor": "${snakeColor}"}`)
         };
         setInterval(gameLoop, 10);
     }
@@ -109,6 +114,10 @@
 
         setupKeyListeners();
         setupSocket(trimmedValue, "join");
+        socket.onopen = () => {
+            let snakeColor = document.getElementById("snakeColor").value
+            socket.send(`{"snakeColor":"${snakeColor}"}`)
+        };
         setInterval(gameLoop, 10);
     }
 
@@ -152,20 +161,20 @@
 
     function handleGameStateUpdate(message) {
         let data = parseMessage(message);
-        //console.log(data)
+        console.log(data)
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
         let players = data.Players;
         for (let i = 0; i < players.length; i++) {
             for (let j = 0; j < players[i].Tail.length; j++) {
-                ctx.fillStyle = "#fff"
+                ctx.fillStyle = players[i].Color
                 ctx.fillRect(players[i].Tail[j].X * scale, players[i].Tail[j].Y * scale, scale, scale);
             }
         }
 
         let pickups = data.Pickups
         for (let i = 0; i < pickups.length; i++) {
-            ctx.fillStyle = "#d43";
+            ctx.fillStyle = "#4b6";
             ctx.fillRect(pickups[i].X * scale, pickups[i].Y * scale, scale, scale);
         }
     }

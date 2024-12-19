@@ -39,6 +39,7 @@ type Client struct {
 	connection      *websocket.Conn
 	alive           bool
 	tailLength      int
+	snakeColor      string
 }
 
 func toTailMessage(tailSegment []TailSegment, tailLength int) []TailMessage {
@@ -54,6 +55,7 @@ type PlayerMessage struct {
 	X         int
 	Y         int
 	Direction Direction
+	Color     string
 	Tail      []TailMessage
 }
 
@@ -76,6 +78,11 @@ type GameStateMessage struct {
 type GameInitRequest struct {
 	LevelWidth  int
 	LevelHeight int
+	SnakeColor  string
+}
+
+type GameJoinRequest struct {
+	SnakeColor string
 }
 
 type GameSetupMessage struct {
@@ -108,7 +115,7 @@ func host(responseWriter http.ResponseWriter, request *http.Request) {
 	json.Unmarshal(msg, &gameInitRequest)
 	levelWidth = utils.Clamp(gameInitRequest.LevelWidth, 40, 200)
 	levelHeight = utils.Clamp(gameInitRequest.LevelHeight, 40, 100)
-	client := createClient(conn)
+	client := createClient(conn, gameInitRequest.SnakeColor)
 	clients = append(clients, client)
 	go inputLoop(client)
 
@@ -123,19 +130,28 @@ func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 		return
 	}
 	conn, _ := upgrader.Upgrade(responseWriter, request, nil)
-	client := createClient(conn)
+	_, msg, msgError := conn.ReadMessage()
+
+	if msgError != nil {
+		println("Error when reading join message")
+	}
+	gameJoinRequest := GameJoinRequest{}
+	json.Unmarshal(msg, &gameJoinRequest)
+
+	client := createClient(conn, gameJoinRequest.SnakeColor)
 	clients = append(clients, client)
 
 	gameSetup := GameSetupMessage{LevelWidth: levelWidth, LevelHeight: levelHeight}
-	msg, _ := json.Marshal(gameSetup)
-	sendMessageToClient(client.connection, GameSetup, msg)
+	outgoingMessage, _ := json.Marshal(gameSetup)
+	sendMessageToClient(client.connection, GameSetup, outgoingMessage)
 
 	go inputLoop(client)
 	println("Game started")
 
 }
 
-func createClient(connection *websocket.Conn) *Client {
+func createClient(connection *websocket.Conn, snakeColor string) *Client {
+
 	client := Client{
 		direction:       down,
 		wantedDirection: down,
@@ -143,6 +159,7 @@ func createClient(connection *websocket.Conn) *Client {
 		alive:           true,
 		snake:           make([]TailSegment, 100),
 		tailLength:      5,
+		snakeColor:      snakeColor,
 	}
 	client.snake[0].x = (10 + 10*len(clients)) % levelWidth
 	client.snake[0].y = 10
