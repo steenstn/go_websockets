@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"go_project/requests"
-	"math/rand"
 	"net/http"
 	"time"
 )
@@ -95,7 +94,6 @@ type GameSetupMessage struct {
 }
 
 var clients = make([]*Client, 0)
-var pickups = make([]Pickup, 5)
 
 func main() {
 	initGame()
@@ -177,16 +175,6 @@ func createClient(connection *websocket.Conn, snakeColor string, name string) *C
 	return &client
 }
 
-func initGame() {
-	println("Initiating game")
-
-	for i := 0; i < len(pickups); i++ {
-		pickups[i].pickupType = 0
-		pickups[i].x = rand.Intn(2 + levelWidth - 4)
-		pickups[i].y = rand.Intn(2 + levelHeight - 4)
-	}
-}
-
 func inputLoop(c *Client) {
 	println("Starting input loop")
 
@@ -203,7 +191,7 @@ func inputLoop(c *Client) {
 		}
 
 		// TODO More sanitation?
-		if len(msg) > 1000 {
+		if len(msg) > 100 {
 			println("Too long message, not processing")
 			continue
 		}

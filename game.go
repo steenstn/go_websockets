@@ -27,6 +27,18 @@ const (
 var levelWidth = 80
 var levelHeight = 60
 
+var pickups = make([]Pickup, 5)
+
+func initGame() {
+	println("Initiating game")
+
+	for i := 0; i < len(pickups); i++ {
+		pickups[i].pickupType = 0
+		pickups[i].x = rand.Intn(2 + levelWidth - 4)
+		pickups[i].y = rand.Intn(2 + levelHeight - 4)
+	}
+}
+
 func gameTick(clients []*Client) GameStateMessage {
 
 	pickupPositions := make([]PickupMessage, len(pickups))
