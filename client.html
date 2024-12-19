@@ -1,10 +1,12 @@
 <style>
     body {
         background-color: #aaa;
+        font-family: Arial,serif;
     }
 
     canvas {
         border: 1px solid #eee;
+        margin: 10px;
     }
 
     .input-button {
@@ -28,6 +30,8 @@
     #buttonDown {
         margin-left: 42px
     }
+
+
 </style>
 <input id="input" type="text" value="localhost"/>
 <button id="hostButton" onclick="hostGame()">Host</button>
@@ -43,20 +47,36 @@
 </div>
 <div>
     <label for="snakeColor">Snake color</label>
-    <input type="color" id="snakeColor"  value="#ffffff">
+    <input type="color" id="snakeColor" value="#ffffff">
 </div>
 <div>
-    <canvas id="c"></canvas>
+    <label for="snakeName">Name</label>
+    <input type="text" id="snakeName" value="">
+</div>
+<table>
+    <tr>
+        <td>
+            <canvas id="c"></canvas>
+        </td>
+        <td>
+            <ul id="playerList">
+            </ul>
+        </td>
+    </tr>
+</table>
+
 </div>
 <script>
-"use strict";
+    "use strict";
     let socket;
     let keyDownCounter = 0;
     const MessageType = {
         TextMessage: 0,
         GameStateUpdate: 1,
-        GameSetup: 2
+        GameSetup: 2,
+        PlayerListUpdate: 3
     };
+
     let levelWidth = 50;
     let levelHeight = 50;
     const scale = 8;
@@ -67,6 +87,8 @@
     let input = document.getElementById("input");
     input.value = document.location.href.replace(/https?:\/\//g, "").replace(":8080/", "");
 
+    let names = ["William Snakespeare", "Hissy Elliott", "Boa Fett", "Noodles", "Jeff", "Cobra OBrien", "Snake Gyllenhaal"];
+    document.getElementById("snakeName").value = names[Math.floor(Math.random() * names.length)];
     c.width = canvasWidth;
     c.height = canvasHeight;
     let ctx = c.getContext('2d');
@@ -75,8 +97,9 @@
     let keysDown = {};
     let keysHit = {};
 
+
     function pressKey(key) {
-        console.log("down " + key)
+        //console.log("down " + key)
         keysDown[key] = true;
         keyDownCounter++;
         if (keyDownCounter === 1) {
@@ -85,13 +108,13 @@
     }
 
     function releaseKey(key) {
-        console.log(key)
+        // console.log(key)
         keyDownCounter = 0;
         delete keysDown[key];
         delete keysHit[key];
     }
 
-     function parseMessage(message) {
+    function parseMessage(message) {
         return JSON.parse(message);
     }
 
@@ -104,7 +127,8 @@
             let inputWidth = document.getElementById("levelWidth").value
             let inputHeight = document.getElementById("levelHeight").value
             let snakeColor = document.getElementById("snakeColor").value
-            socket.send(`{"levelWidth":${inputWidth}, "levelHeight":${inputHeight}, "snakeColor": "${snakeColor}"}`)
+            let snakeName = document.getElementById("snakeName").value;
+            socket.send(`{"levelWidth":${inputWidth}, "levelHeight":${inputHeight}, "snakeColor": "${snakeColor}", "snakeName":"${snakeName}"}`)
         };
         setInterval(gameLoop, 10);
     }
@@ -115,8 +139,9 @@
         setupKeyListeners();
         setupSocket(trimmedValue, "join");
         socket.onopen = () => {
-            let snakeColor = document.getElementById("snakeColor").value
-            socket.send(`{"snakeColor":"${snakeColor}"}`)
+            let snakeColor = document.getElementById("snakeColor").value;
+            let snakeName = document.getElementById("snakeName").value;
+            socket.send(`{"snakeColor":"${snakeColor}", "snakeName":"${snakeName}"}`)
         };
         setInterval(gameLoop, 10);
     }
@@ -142,6 +167,9 @@
                 case MessageType.GameSetup:
                     handleGameSetup(message);
                     break;
+                case MessageType.PlayerListUpdate:
+                    handlePlayerListUpdate(message);
+                    break;
                 default:
                     console.log("Unknown type " + type)
             }
@@ -150,18 +178,18 @@
     }
 
     function setupKeyListeners() {
-        addEventListener("keydown",  (e) => {
+        addEventListener("keydown", (e) => {
             pressKey(e.key);
         }, false);
 
-        addEventListener("keyup",  (e) => {
+        addEventListener("keyup", (e) => {
             releaseKey(e.key);
         }, false);
     }
 
     function handleGameStateUpdate(message) {
         let data = parseMessage(message);
-        console.log(data)
+        //console.log(data)
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
         let players = data.Players;
@@ -189,6 +217,20 @@
         c.height = canvasHeight;
     }
 
+    function handlePlayerListUpdate(message) {
+        let data = parseMessage(message)
+        let entries = data.Entries;
+
+        console.log()
+        let playerList = document.getElementById("playerList");
+        playerList.textContent = '';
+        for(let i = 0; i < entries.length; i++) {
+            let li = document.createElement("li");
+            li.setAttribute("style", `color:${entries[i].Color};`);
+            li.appendChild(document.createTextNode(entries[i].Name));
+            playerList.appendChild(li)
+        }
+    }
 
     function gameLoop() {
         if ("ArrowUp" in keysDown) {

@@ -14,9 +14,10 @@ type Message struct {
 type MessageType byte
 
 const (
-	TextMessage     MessageType = 0
-	GameStateUpdate             = 1
-	GameSetup                   = 2
+	TextMessage      MessageType = 0
+	GameStateUpdate              = 1
+	GameSetup                    = 2
+	PlayerListUpdate             = 3
 )
 
 // gprc?

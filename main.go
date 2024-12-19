@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"go_project/requests"
 	"go_project/utils"
 	"math/rand"
 	"net/http"
@@ -40,6 +41,7 @@ type Client struct {
 	alive           bool
 	tailLength      int
 	snakeColor      string
+	name            string
 }
 
 func toTailMessage(tailSegment []TailSegment, tailLength int) []TailMessage {
@@ -75,14 +77,13 @@ type GameStateMessage struct {
 	Pickups []PickupMessage
 }
 
-type GameInitRequest struct {
-	LevelWidth  int
-	LevelHeight int
-	SnakeColor  string
+type PlayerListUpdateMessage struct {
+	Entries []PlayerListEntry
 }
 
-type GameJoinRequest struct {
-	SnakeColor string
+type PlayerListEntry struct {
+	Name  string
+	Color string
 }
 
 type GameSetupMessage struct {
@@ -111,11 +112,11 @@ func host(responseWriter http.ResponseWriter, request *http.Request) {
 	conn, _ := upgrader.Upgrade(responseWriter, request, nil)
 	_, msg, _ := conn.ReadMessage()
 
-	gameInitRequest := GameInitRequest{}
+	gameInitRequest := requests.GameInitRequest{}
 	json.Unmarshal(msg, &gameInitRequest)
 	levelWidth = utils.Clamp(gameInitRequest.LevelWidth, 40, 200)
 	levelHeight = utils.Clamp(gameInitRequest.LevelHeight, 40, 100)
-	client := createClient(conn, gameInitRequest.SnakeColor)
+	client := createClient(conn, gameInitRequest.SnakeColor, gameInitRequest.SnakeName)
 	clients = append(clients, client)
 	go inputLoop(client)
 
@@ -134,24 +135,35 @@ func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 
 	if msgError != nil {
 		println("Error when reading join message")
+		return
 	}
-	gameJoinRequest := GameJoinRequest{}
+
+	gameJoinRequest := requests.GameJoinRequest{}
 	json.Unmarshal(msg, &gameJoinRequest)
 
-	client := createClient(conn, gameJoinRequest.SnakeColor)
+	client := createClient(conn, gameJoinRequest.SnakeColor, gameJoinRequest.SnakeName)
 	clients = append(clients, client)
 
 	gameSetup := GameSetupMessage{LevelWidth: levelWidth, LevelHeight: levelHeight}
 	outgoingMessage, _ := json.Marshal(gameSetup)
 	sendMessageToClient(client.connection, GameSetup, outgoingMessage)
 
+	playerListUpdate := PlayerListUpdateMessage{make([]PlayerListEntry, 0)}
+
+	for i := 0; i < len(clients); i++ {
+		playerListUpdate.Entries = append(playerListUpdate.Entries, PlayerListEntry{
+			Name:  clients[i].name,
+			Color: clients[i].snakeColor,
+		})
+	}
+	broadcastMessageToActiveClients(&clients, PlayerListUpdate, playerListUpdate)
+
 	go inputLoop(client)
 	println("Game started")
 
 }
 
-func createClient(connection *websocket.Conn, snakeColor string) *Client {
-
+func createClient(connection *websocket.Conn, snakeColor string, name string) *Client {
 	client := Client{
 		direction:       down,
 		wantedDirection: down,
@@ -160,6 +172,7 @@ func createClient(connection *websocket.Conn, snakeColor string) *Client {
 		snake:           make([]TailSegment, 100),
 		tailLength:      5,
 		snakeColor:      snakeColor,
+		name:            name,
 	}
 	client.snake[0].x = (10 + 10*len(clients)) % levelWidth
 	client.snake[0].y = 10
@@ -211,11 +224,11 @@ func inputLoop(c *Client) {
 }
 
 func broadcastGameState(gameState GameStateMessage) {
+	var message, _ = json.Marshal(gameState)
 	for i := 0; i < len(clients); i++ {
 		if !clients[i].alive {
 			continue
 		}
-		var message, _ = json.Marshal(gameState)
 		var err = sendMessageToClient(clients[i].connection, GameStateUpdate, message)
 		if err != nil {
 			closeError := clients[i].connection.Close()
@@ -223,6 +236,25 @@ func broadcastGameState(gameState GameStateMessage) {
 			if closeError != nil {
 				println("Failed to close connection")
 			}
+		}
+	}
+}
+
+func broadcastMessageToActiveClients(clients *[]*Client, messageType MessageType, message any) {
+	var jsonMessage, err = json.Marshal(message)
+	if err != nil {
+		println("Failed to marshall message")
+	}
+
+	for i := 0; i < len(*clients); i++ {
+		client := (*clients)[i]
+		if !client.alive {
+			continue
+		}
+
+		var err = sendMessageToClient(client.connection, messageType, jsonMessage)
+		if err != nil {
+			println("Failed to send message")
 		}
 	}
 }

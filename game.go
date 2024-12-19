@@ -25,11 +25,6 @@ const (
 	right           = 3
 )
 
-type GameSession struct {
-	LevelWidth  int
-	LevelHeight int
-}
-
 var levelWidth = 50
 var levelHeight = 50
 
@@ -62,7 +57,11 @@ func gameLoop() {
 
 			wrapAround(clients[i], levelWidth, levelHeight, 0)
 
-			clientPositions = append(clientPositions, PlayerMessage{clients[i].snake[0].x, clients[i].snake[0].y, clients[i].direction, clients[i].snakeColor, toTailMessage(clients[i].snake, clients[i].tailLength)})
+			clientPositions = append(clientPositions, PlayerMessage{X: clients[i].snake[0].x,
+				Y:         clients[i].snake[0].y,
+				Direction: clients[i].direction,
+				Color:     clients[i].snakeColor,
+				Tail:      toTailMessage(clients[i].snake, clients[i].tailLength)})
 		}
 
 		// Update pickups
@@ -135,16 +134,15 @@ func checkCollisionsWithPickups(client *Client) {
 }
 
 func wrapAround(position *Client, xMax int, yMax int, buffer int) {
-	if position.snake[0].x > xMax+buffer {
+	if position.snake[0].x >= xMax+buffer {
 		position.snake[0].x = -buffer
-	}
-	if position.snake[0].x < -buffer {
+	} else if position.snake[0].x < -buffer {
 		position.snake[0].x = xMax + buffer
 	}
-	if position.snake[0].y < -buffer {
-		position.snake[0].y = yMax + buffer
-	}
-	if position.snake[0].y > yMax+buffer {
+
+	if position.snake[0].y >= yMax+buffer {
 		position.snake[0].y = -buffer
+	} else if position.snake[0].y < -buffer {
+		position.snake[0].y = yMax + buffer
 	}
 }
