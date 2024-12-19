@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"go_project/requests"
-	"go_project/utils"
 	"math/rand"
 	"net/http"
 )
@@ -16,6 +15,8 @@ Bugs
 TODO
 - Remove clients when connection is dropped. Max number on init?
 -
+
+479 bytes per meddelande med json
 
 Pickup ideas
 - Faster speed
@@ -95,34 +96,15 @@ var clients = make([]*Client, 0)
 var pickups = make([]Pickup, 5)
 
 func main() {
+	initGame()
+	gameRunning = true
+	go gameLoop()
+
 	http.HandleFunc("/join", joinGame)
-	http.HandleFunc("/host", host)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "client.html")
 	})
 	http.ListenAndServe(":8080", nil)
-}
-
-func host(responseWriter http.ResponseWriter, request *http.Request) {
-	if gameRunning {
-		println("Game already running")
-		return
-	}
-	println("Hosting")
-	conn, _ := upgrader.Upgrade(responseWriter, request, nil)
-	_, msg, _ := conn.ReadMessage()
-
-	gameInitRequest := requests.GameInitRequest{}
-	json.Unmarshal(msg, &gameInitRequest)
-	levelWidth = utils.Clamp(gameInitRequest.LevelWidth, 40, 200)
-	levelHeight = utils.Clamp(gameInitRequest.LevelHeight, 40, 100)
-	client := createClient(conn, gameInitRequest.SnakeColor, gameInitRequest.SnakeName)
-	clients = append(clients, client)
-	go inputLoop(client)
-
-	initGame()
-	gameRunning = true
-	gameLoop()
 }
 
 func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
@@ -180,7 +162,7 @@ func createClient(connection *websocket.Conn, snakeColor string, name string) *C
 }
 
 func initGame() {
-	println("Init joinGame")
+	println("Initiating game")
 
 	for i := 0; i < len(pickups); i++ {
 		pickups[i].pickupType = 0

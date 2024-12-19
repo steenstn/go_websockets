@@ -25,8 +25,8 @@ const (
 	right           = 3
 )
 
-var levelWidth = 50
-var levelHeight = 50
+var levelWidth = 80
+var levelHeight = 60
 
 var gameRunning = false
 
