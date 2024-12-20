@@ -1,12 +1,16 @@
 <style>
     body {
         background-color: #aaa;
-        font-family: Arial,serif;
+        font-family: Arial, serif;
     }
 
     canvas {
         border: 1px solid #eee;
         margin: 10px;
+    }
+
+    ul {
+        list-style-type: none;
     }
 
     .input-button {
@@ -50,6 +54,7 @@
             <canvas id="c"></canvas>
         </td>
         <td>
+            <h3>Players</h3>
             <ul id="playerList">
             </ul>
         </td>
@@ -135,7 +140,7 @@
             //console.log(message)
             switch (type) {
                 case MessageType.TextMessage:
-                    ctx.fillText(message, 10, 50);
+                    handleTextMessage(message);
                     break;
                 case MessageType.GameStateUpdate:
                     handleGameStateUpdate(message);
@@ -210,11 +215,22 @@
 
         let playerList = document.getElementById("playerList");
         playerList.textContent = '';
-        for(let i = 0; i < entries.length; i++) {
+        for (let i = 0; i < entries.length; i++) {
             let li = document.createElement("li");
             li.setAttribute("style", `color:${entries[i].Color};`);
             li.appendChild(document.createTextNode(entries[i].Name));
             playerList.appendChild(li)
+        }
+    }
+
+    function handleTextMessage(message) {
+        let serverLog = document.getElementById("serverLog");
+        let li = document.createElement("li");
+        li.appendChild(document.createTextNode(message));
+        serverLog.appendChild(li)
+        let logEntries = serverLog.getElementsByTagName('li');
+        if (logEntries.length > 5) {
+            serverLog.removeChild(logEntries[0]);
         }
     }
 
@@ -241,15 +257,26 @@
     }
 
 </script>
-<div class="input-section">
-    <div>
-        <button id="buttonUp" class="input-button" onclick="changeDirection('ArrowUp')">Up</button>
-    </div>
-    <div>
-        <button id="buttonLeft" class="input-button" onclick="changeDirection('ArrowLeft')">Left</button>
-        <button id="buttonRight" class="input-button" onclick="changeDirection('ArrowRight')">Right</button>
-    </div>
-    <div>
-        <button id="buttonDown" class="input-button" onclick="changeDirection('ArrowDown')">Down</button>
-    </div>
-</div>
+<table>
+    <tr>
+        <td>
+            <div class="input-section">
+                <div>
+                    <button id="buttonUp" class="input-button" onclick="changeDirection('ArrowUp')">Up</button>
+                </div>
+                <div>
+                    <button id="buttonLeft" class="input-button" onclick="changeDirection('ArrowLeft')">Left</button>
+                    <button id="buttonRight" class="input-button" onclick="changeDirection('ArrowRight')">Right</button>
+                </div>
+                <div>
+                    <button id="buttonDown" class="input-button" onclick="changeDirection('ArrowDown')">Down</button>
+                </div>
+
+            </div>
+        </td>
+        <td>
+            <ul id="serverLog"></ul>
+        </td>
+    </tr>
+</table>
+

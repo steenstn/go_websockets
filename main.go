@@ -54,7 +54,7 @@ type GameSetupMessage struct {
 	LevelHeight int
 }
 
-var clients = make([]*Client, 10)
+var clients = make([]*Client, 20)
 
 func main() {
 	game.InitGame()
@@ -101,7 +101,13 @@ func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 	gameJoinRequest := requests.GameJoinRequest{}
 	json.Unmarshal(msg, &gameJoinRequest)
 
-	client := createClient(conn, gameJoinRequest.SnakeColor, gameJoinRequest.SnakeName)
+	client, err := createClient(conn, gameJoinRequest.SnakeColor, gameJoinRequest.SnakeName)
+	if err != nil {
+		println(err.Error())
+		sendMessageToClient(conn, TextMessage, []byte("Cannot connect. Too many players"))
+		conn.Close()
+		return
+	}
 	//clients = append(clients, client)
 
 	gameSetup := GameSetupMessage{LevelWidth: game.LevelWidth, LevelHeight: game.LevelHeight}
@@ -125,10 +131,11 @@ func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 	println("Game started")
 }
 
-func createClient(connection *websocket.Conn, snakeColor string, name string) *Client {
-
-	index := getFirstFreeSlotIndex(clients)
-
+func createClient(connection *websocket.Conn, snakeColor string, name string) (*Client, error) {
+	index, err := getFirstFreeSlotIndex(clients)
+	if err != nil {
+		return nil, err
+	}
 	player := game.CreatePlayer(name, snakeColor)
 
 	client := Client{
@@ -138,16 +145,23 @@ func createClient(connection *websocket.Conn, snakeColor string, name string) *C
 	}
 
 	clients[index] = &client
-	return &client
+	return &client, nil
 }
 
-func getFirstFreeSlotIndex(clients []*Client) int {
+func getFirstFreeSlotIndex(clients []*Client) (int, error) {
 	for i := 0; i < len(clients); i++ {
 		if clients[i] == nil || clients[i].connected == false {
-			return i
+			return i, nil
 		}
 	}
-	return -1
+	return -1, &TestError{}
+}
+
+type TestError struct {
+}
+
+func (m *TestError) Error() string {
+	return "No free client slots"
 }
 
 func inputLoop(c *Client) {
