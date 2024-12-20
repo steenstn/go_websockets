@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/websocket"
+	"go_project/game"
 	"go_project/requests"
 	"net/http"
 	"time"
@@ -35,48 +35,9 @@ var upgrader = websocket.Upgrader{
 }
 
 type Client struct {
-	direction       Direction
-	wantedDirection Direction
-	snake           []TailSegment
-	connection      *websocket.Conn
-	connected       bool
-	alive           bool
-	tailLength      int
-	snakeColor      string
-	name            string
-}
-
-func toTailMessage(tailSegment []TailSegment, tailLength int) []TailMessage {
-	result := make([]TailMessage, tailLength)
-	for i := 0; i < tailLength; i++ {
-		result[i].X = tailSegment[i].x
-		result[i].Y = tailSegment[i].y
-	}
-	return result
-}
-
-type PlayerMessage struct {
-	X         int
-	Y         int
-	Direction Direction
-	Color     string
-	Tail      []TailMessage
-}
-
-type TailMessage struct {
-	X int
-	Y int
-}
-
-type PickupMessage struct {
-	X    int
-	Y    int
-	Type int
-}
-
-type GameStateMessage struct {
-	Players []PlayerMessage
-	Pickups []PickupMessage
+	connection *websocket.Conn
+	connected  bool
+	player     game.Player
 }
 
 type PlayerListUpdateMessage struct {
@@ -93,10 +54,10 @@ type GameSetupMessage struct {
 	LevelHeight int
 }
 
-var clients = make([]*Client, 0)
+var clients = make([]*Client, 10)
 
 func main() {
-	initGame()
+	game.InitGame()
 	go gameLoop()
 
 	http.HandleFunc("/join", joinGame)
@@ -109,9 +70,16 @@ func main() {
 // Do this with channels instead?
 func gameLoop() {
 	for {
-		gameState := gameTick(clients)
+		activeClients := make([]*game.Player, 0)
+		for i := 0; i < len(clients); i++ {
+			if clients[i] != nil && clients[i].connected {
+				activeClients = append(activeClients, &clients[i].player)
+			}
+		}
+		gameState := game.Tick(activeClients)
 
 		broadcastGameState(gameState)
+
 		time.Sleep(80 * time.Millisecond)
 	}
 }
@@ -134,45 +102,52 @@ func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 	json.Unmarshal(msg, &gameJoinRequest)
 
 	client := createClient(conn, gameJoinRequest.SnakeColor, gameJoinRequest.SnakeName)
-	clients = append(clients, client)
+	//clients = append(clients, client)
 
-	gameSetup := GameSetupMessage{LevelWidth: levelWidth, LevelHeight: levelHeight}
+	gameSetup := GameSetupMessage{LevelWidth: game.LevelWidth, LevelHeight: game.LevelHeight}
 	outgoingMessage, _ := json.Marshal(gameSetup)
 	sendMessageToClient(client.connection, GameSetup, outgoingMessage)
 
 	playerListUpdate := PlayerListUpdateMessage{make([]PlayerListEntry, 0)}
 
 	for i := 0; i < len(clients); i++ {
-		if !clients[i].connected {
+		if clients[i] == nil || !clients[i].connected {
 			continue
 		}
 		playerListUpdate.Entries = append(playerListUpdate.Entries, PlayerListEntry{
-			Name:  clients[i].name,
-			Color: clients[i].snakeColor,
+			Name:  clients[i].player.Name,
+			Color: clients[i].player.SnakeColor,
 		})
 	}
 	broadcastMessageToActiveClients(&clients, PlayerListUpdate, playerListUpdate)
 
 	go inputLoop(client)
 	println("Game started")
-
 }
 
 func createClient(connection *websocket.Conn, snakeColor string, name string) *Client {
+
+	index := getFirstFreeSlotIndex(clients)
+
+	player := game.CreatePlayer(name, snakeColor)
+
 	client := Client{
-		direction:       down,
-		wantedDirection: down,
-		connection:      connection,
-		alive:           true,
-		connected:       true,
-		snake:           make([]TailSegment, 100),
-		tailLength:      5,
-		snakeColor:      snakeColor,
-		name:            name,
+		connection: connection,
+		connected:  true,
+		player:     player,
 	}
-	client.snake[0].x = (10 + 10*len(clients)) % levelWidth
-	client.snake[0].y = 10
+
+	clients[index] = &client
 	return &client
+}
+
+func getFirstFreeSlotIndex(clients []*Client) int {
+	for i := 0; i < len(clients); i++ {
+		if clients[i] == nil || clients[i].connected == false {
+			return i
+		}
+	}
+	return -1
 }
 
 func inputLoop(c *Client) {
@@ -185,35 +160,31 @@ func inputLoop(c *Client) {
 		_, msg, err := c.connection.ReadMessage()
 		if err != nil {
 			println("Input reading failed, player dropped")
-			c.alive = false
+			c.connected = false
 			//c.connection.Close()
 			break
 		}
 
-		// TODO More sanitation?
+		// TODO More sanitation
 		if len(msg) > 100 {
 			println("Too long message, not processing")
 			continue
 		}
-		message := string(msg)
-		fmt.Printf("%s sent: %s\n", c.connection.RemoteAddr(), message)
+		//message := string(msg)
+		//fmt.Printf("%s sent: %s\n", c.connection.RemoteAddr(), message)
 
 		var input = string(msg)
-		if input == "U" && c.wantedDirection != down {
-			c.wantedDirection = up
-		} else if input == "L" && c.wantedDirection != right {
-			c.wantedDirection = left
-		} else if input == "D" && c.wantedDirection != up {
-			c.wantedDirection = down
-		} else if input == "R" && c.wantedDirection != left {
-			c.wantedDirection = right
-		}
+		game.SetWantedDirection(&c.player, input)
+
 	}
 }
 
-func broadcastGameState(gameState GameStateMessage) {
+func broadcastGameState(gameState game.GameStateMessage) {
 	var message, _ = json.Marshal(gameState)
 	for i := 0; i < len(clients); i++ {
+		if clients[i] == nil {
+			continue
+		}
 		if !clients[i].connected {
 			clients[i].connection.Close()
 			continue
@@ -237,7 +208,7 @@ func broadcastMessageToActiveClients(clients *[]*Client, messageType MessageType
 
 	for i := 0; i < len(*clients); i++ {
 		client := (*clients)[i]
-		if !client.connected {
+		if client == nil || !client.connected {
 			continue
 		}
 
