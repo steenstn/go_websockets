@@ -109,8 +109,10 @@ func Tick(players []*Player) GameStateMessage {
 		}
 		moveSnake(&players[i].snake, players[i].TailLength, players[i].direction)
 
-		// TODO: Make proper functions of these that return
-		checkCollisionsWithSnakes(players[i], players)
+		if hasCollidedWithAnotherSnake(players[i], players) {
+			players[i].alive = false
+		}
+
 		scoreChanged = checkCollisionsWithPickups(players[i])
 
 		wrapAround(players[i], LevelWidth, LevelHeight, 0)
@@ -182,7 +184,7 @@ func moveSnake(snakePointer *[]TailSegment, tailLength int, direction Direction)
 	}
 }
 
-func checkCollisionsWithSnakes(player *Player, allPlayers []*Player) {
+func hasCollidedWithAnotherSnake(player *Player, allPlayers []*Player) bool {
 	headX := player.snake[0].x
 	headY := player.snake[0].y
 
@@ -193,11 +195,11 @@ func checkCollisionsWithSnakes(player *Player, allPlayers []*Player) {
 		snakeToCheck := &allPlayers[i].snake
 		for j := 1; j < allPlayers[i].TailLength; j++ {
 			if headX == (*snakeToCheck)[j].x && headY == (*snakeToCheck)[j].y {
-				player.alive = false
-				break
+				return true
 			}
 		}
 	}
+	return false
 }
 
 func checkCollisionsWithPickups(player *Player) bool {
