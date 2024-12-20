@@ -218,7 +218,7 @@
         for (let i = 0; i < entries.length; i++) {
             let li = document.createElement("li");
             li.setAttribute("style", `color:${entries[i].Color};`);
-            li.appendChild(document.createTextNode(entries[i].Name));
+            li.appendChild(document.createTextNode(entries[i].Score + ": " + entries[i].Name));
             playerList.appendChild(li)
         }
     }

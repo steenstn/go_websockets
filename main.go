@@ -47,6 +47,7 @@ type PlayerListUpdateMessage struct {
 type PlayerListEntry struct {
 	Name  string
 	Color string
+	Score int
 }
 
 type GameSetupMessage struct {
@@ -79,6 +80,9 @@ func gameLoop() {
 		gameState := game.Tick(activeClients)
 
 		broadcastGameState(gameState)
+		if gameState.ScoreChanged {
+			broadcastPlayerlist(&clients)
+		}
 
 		time.Sleep(80 * time.Millisecond)
 	}
@@ -114,21 +118,26 @@ func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 	outgoingMessage, _ := json.Marshal(gameSetup)
 	sendMessageToClient(client.connection, GameSetup, outgoingMessage)
 
+	broadcastPlayerlist(&clients)
+	go inputLoop(client)
+	println("Game started")
+}
+
+func broadcastPlayerlist(clients *[]*Client) {
 	playerListUpdate := PlayerListUpdateMessage{make([]PlayerListEntry, 0)}
 
-	for i := 0; i < len(clients); i++ {
-		if clients[i] == nil || !clients[i].connected {
+	for i := 0; i < len(*clients); i++ {
+		client := (*clients)[i]
+		if client == nil || !client.connected {
 			continue
 		}
 		playerListUpdate.Entries = append(playerListUpdate.Entries, PlayerListEntry{
-			Name:  clients[i].player.Name,
-			Color: clients[i].player.SnakeColor,
+			Name:  client.player.Name,
+			Color: client.player.SnakeColor,
+			Score: client.player.TailLength,
 		})
 	}
-	broadcastMessageToActiveClients(&clients, PlayerListUpdate, playerListUpdate)
-
-	go inputLoop(client)
-	println("Game started")
+	broadcastMessageToActiveClients(clients, PlayerListUpdate, playerListUpdate)
 }
 
 func createClient(connection *websocket.Conn, snakeColor string, name string) (*Client, error) {
@@ -189,7 +198,6 @@ func inputLoop(c *Client) {
 
 		var input = string(msg)
 		game.SetWantedDirection(&c.player, input)
-
 	}
 }
 
