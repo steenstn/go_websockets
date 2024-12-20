@@ -82,8 +82,16 @@
     let input = document.getElementById("input");
     input.value = document.location.href.replace(/https?:\/\//g, "").replace(":8080/", "");
 
-    let names = ["William Snakespeare", "Hissy Elliott", "Boa Fett", "Noodles", "Jeff", "Cobra OBrien", "Snake Gyllenhaal"];
+    let names = ["William Snakespeare",
+        "Hissy Elliott",
+        "Boa Fett",
+        "Noodles",
+        "Jeff",
+        "Cobra OBrien",
+        "Snake Gyllenhaal",
+        "Conan The Boabarian"];
     document.getElementById("snakeName").value = names[Math.floor(Math.random() * names.length)];
+
     c.width = canvasWidth;
     c.height = canvasHeight;
     let ctx = c.getContext('2d');
@@ -279,4 +287,3 @@
         </td>
     </tr>
 </table>
-

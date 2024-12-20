@@ -86,37 +86,40 @@ func SetWantedDirection(player *Player, input string) {
 	}
 }
 
-func Tick(clients []*Player) GameStateMessage {
+func Tick(players []*Player) GameStateMessage {
 
 	pickupPositions := make([]PickupMessage, len(pickups))
 	clientPositions := make([]PlayerMessage, 0)
 	scoreChanged := false
+
 	// Update snakes
-	for i := 0; i < len(clients); i++ {
-		if clients[i].alive == false {
+	for i := 0; i < len(players); i++ {
+		if players[i].alive == false {
 			continue
 		}
-		input := clients[i].wantedDirection
-		if input == up && clients[i].direction != down {
-			clients[i].direction = up
-		} else if input == left && clients[i].direction != right {
-			clients[i].direction = left
-		} else if input == down && clients[i].direction != up {
-			clients[i].direction = down
-		} else if input == right && clients[i].direction != left {
-			clients[i].direction = right
+		input := players[i].wantedDirection
+		if input == up && players[i].direction != down {
+			players[i].direction = up
+		} else if input == left && players[i].direction != right {
+			players[i].direction = left
+		} else if input == down && players[i].direction != up {
+			players[i].direction = down
+		} else if input == right && players[i].direction != left {
+			players[i].direction = right
 		}
-		moveSnake(&clients[i].snake, clients[i].TailLength, clients[i].direction)
-		checkCollisionsWithSnakes(clients[i], clients)
-		scoreChanged = checkCollisionsWithPickups(clients[i])
+		moveSnake(&players[i].snake, players[i].TailLength, players[i].direction)
 
-		wrapAround(clients[i], LevelWidth, LevelHeight, 0)
+		// TODO: Make proper functions of these that return
+		checkCollisionsWithSnakes(players[i], players)
+		scoreChanged = checkCollisionsWithPickups(players[i])
 
-		clientPositions = append(clientPositions, PlayerMessage{X: clients[i].snake[0].x,
-			Y:         clients[i].snake[0].y,
-			Direction: clients[i].direction,
-			Color:     clients[i].SnakeColor,
-			Tail:      toTailMessage(clients[i].snake, clients[i].TailLength)})
+		wrapAround(players[i], LevelWidth, LevelHeight, 0)
+
+		clientPositions = append(clientPositions, PlayerMessage{X: players[i].snake[0].x,
+			Y:         players[i].snake[0].y,
+			Direction: players[i].direction,
+			Color:     players[i].SnakeColor,
+			Tail:      toTailMessage(players[i].snake, players[i].TailLength)})
 	}
 
 	// Update pickups
@@ -144,7 +147,7 @@ func CreatePlayer(name string, color string) Player {
 		Name:            name,
 	}
 
-	player.snake[0].x = 20 //(10 + 10*len(clients)) % levelWidth
+	player.snake[0].x = 20 + rand.Intn(LevelWidth-40)
 	player.snake[0].y = 10
 	return player
 }
@@ -179,30 +182,31 @@ func moveSnake(snakePointer *[]TailSegment, tailLength int, direction Direction)
 	}
 }
 
-func checkCollisionsWithSnakes(client *Player, clients []*Player) {
-	headX := client.snake[0].x
-	headY := client.snake[0].y
+func checkCollisionsWithSnakes(player *Player, allPlayers []*Player) {
+	headX := player.snake[0].x
+	headY := player.snake[0].y
 
-	for i := 0; i < len(clients); i++ {
-		if clients[i] == nil || clients[i].alive == false {
+	for i := 0; i < len(allPlayers); i++ {
+		if allPlayers[i] == nil || allPlayers[i].alive == false {
 			continue
 		}
-		snakeToCheck := &clients[i].snake
-		for j := 1; j < clients[i].TailLength; j++ {
+		snakeToCheck := &allPlayers[i].snake
+		for j := 1; j < allPlayers[i].TailLength; j++ {
 			if headX == (*snakeToCheck)[j].x && headY == (*snakeToCheck)[j].y {
-				client.alive = false
+				player.alive = false
+				break
 			}
 		}
 	}
 }
 
-func checkCollisionsWithPickups(client *Player) bool {
+func checkCollisionsWithPickups(player *Player) bool {
 	for i := 0; i < len(pickups); i++ {
-		if client.snake[0].x == pickups[i].x && client.snake[0].y == pickups[i].y {
+		if player.snake[0].x == pickups[i].x && player.snake[0].y == pickups[i].y {
 			// Grow snake
-			client.TailLength++
-			client.snake[client.TailLength].x = client.snake[client.TailLength-1].x
-			client.snake[client.TailLength].y = client.snake[client.TailLength-1].y
+			player.TailLength++
+			player.snake[player.TailLength].x = player.snake[player.TailLength-1].x
+			player.snake[player.TailLength].y = player.snake[player.TailLength-1].y
 
 			// Reposition pickup
 			pickups[i].x = rand.Intn(2 + LevelWidth - 4)

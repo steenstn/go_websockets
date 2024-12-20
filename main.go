@@ -13,7 +13,6 @@ import (
 Bugs
 
 TODO
-- Remove clients when connection is dropped. Max number on init?
 -
 
 479 bytes per meddelande med json
@@ -26,7 +25,7 @@ Pickup ideas
 
 
 Anti cheat
-Send some hash to show code is not modified
+Send some hash to show code is not modified. What about replay attacks?
 */
 
 var upgrader = websocket.Upgrader{
@@ -163,14 +162,7 @@ func getFirstFreeSlotIndex(clients []*Client) (int, error) {
 			return i, nil
 		}
 	}
-	return -1, &TestError{}
-}
-
-type TestError struct {
-}
-
-func (m *TestError) Error() string {
-	return "No free client slots"
+	return -1, &ServerFullError{}
 }
 
 func inputLoop(c *Client) {
