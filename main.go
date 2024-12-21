@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
+	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/websocket"
 	"go_project/game"
 	"go_project/requests"
@@ -28,6 +31,7 @@ Anti cheat
 Send some hash to show code is not modified. What about replay attacks?
 */
 
+var SendWithBinary = true
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -64,6 +68,7 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "client.html")
 	})
+
 	http.ListenAndServe(":8080", nil)
 }
 
@@ -94,6 +99,8 @@ In a production environment, make sure to validate the origin to avoid Cross-Sit
 func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 
 	conn, _ := upgrader.Upgrade(responseWriter, request, nil)
+	//sendByteMessageToClient(conn, GameSetup, []byte("aaa"))
+	//sendGameSetupMessage(conn, )
 	_, msg, msgError := conn.ReadMessage()
 
 	if msgError != nil {
@@ -114,12 +121,26 @@ func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 	//clients = append(clients, client)
 
 	gameSetup := GameSetupMessage{LevelWidth: game.LevelWidth, LevelHeight: game.LevelHeight}
-	outgoingMessage, _ := json.Marshal(gameSetup)
-	sendMessageToClient(client.connection, GameSetup, outgoingMessage)
+	if SendWithBinary {
+		sendGameSetupMessage(client.connection, gameSetup)
+	} else {
+		outgoingMessage, _ := json.Marshal(gameSetup)
+		sendMessageToClient(client.connection, GameSetup, outgoingMessage)
+	}
 
 	broadcastPlayerlist(&clients)
 	go inputLoop(client)
 	println("Game started")
+}
+
+func lol() {
+	buf := new(bytes.Buffer)
+	var num uint16 = 1234
+	err := binary.Write(buf, binary.LittleEndian, num)
+	if err != nil {
+		fmt.Println("binary.Write failed:", err)
+	}
+	fmt.Printf("% x", buf.Bytes())
 }
 
 func broadcastPlayerlist(clients *[]*Client) {

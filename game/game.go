@@ -7,7 +7,7 @@ import (
 type Pickup struct {
 	x          int
 	y          int
-	pickupType int
+	pickupType byte
 }
 
 type TailSegment struct {
@@ -34,7 +34,7 @@ type GameStateMessage struct {
 type PickupMessage struct {
 	X    int
 	Y    int
-	Type int
+	Type byte
 }
 
 type PlayerMessage struct {
@@ -50,7 +50,7 @@ type TailMessage struct {
 	Y int
 }
 
-type Direction int
+type Direction byte
 
 const (
 	up    Direction = 0

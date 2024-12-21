@@ -137,11 +137,31 @@
 
     function setupSocket(hostUrl, endpoint) {
         socket = new WebSocket("ws://" + hostUrl + ":8080/" + endpoint);
+        socket.binaryType = "arraybuffer"
+
         socket.onopen = () => {
             console.log("Status: Connected");
         };
 
         socket.onmessage = function (e) {
+            console.log("aa", e.data)
+            let byteArray = new Uint8Array(e.data)
+            if (byteArray.length > 0) {
+                console.log("Byte message: ", byteArray)
+                let messageType = byteArray[0];
+                switch (messageType) {
+                    case MessageType.GameSetup:
+                        let width = (byteArray[1] << 8) + byteArray[2];
+                        let height = (byteArray[3] << 8) + byteArray[4];
+
+                        handleGameSetup(width, height);
+                        break;
+                    default:
+                        console.log("Unknown type " + type)
+                }
+                return
+            }
+
             let json = parseMessage(e.data)
             let type = json.Type
             let message = atob(json.Msg);
@@ -154,7 +174,8 @@
                     handleGameStateUpdate(message);
                     break;
                 case MessageType.GameSetup:
-                    handleGameSetup(message);
+                    let data = parseMessage(message)
+                    handleGameSetup(data.LevelWidth, data.LevelHeight);
                     break;
                 case MessageType.PlayerListUpdate:
                     handlePlayerListUpdate(message);
@@ -206,11 +227,9 @@
         }
     }
 
-    function handleGameSetup(message) {
-        let data = parseMessage(message)
-        console.log(data)
-        levelWidth = data.LevelWidth;
-        levelHeight = data.LevelHeight;
+    function handleGameSetup(width, height) {
+        levelWidth = width;
+        levelHeight = height;
         canvasWidth = levelWidth * scale;
         canvasHeight = levelHeight * scale;
         c.width = canvasWidth;
