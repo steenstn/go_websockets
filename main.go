@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bytes"
-	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/websocket"
 	"go_project/game"
 	"go_project/requests"
@@ -132,16 +129,6 @@ func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 	broadcastPlayerlist(&clients)
 	go inputLoop(client)
 	println("Game started")
-}
-
-func lol() {
-	buf := new(bytes.Buffer)
-	var num uint16 = 1234
-	err := binary.Write(buf, binary.LittleEndian, num)
-	if err != nil {
-		fmt.Println("binary.Write failed:", err)
-	}
-	fmt.Printf("% x", buf.Bytes())
 }
 
 func broadcastPlayerlist(clients *[]*Client) {
