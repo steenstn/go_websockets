@@ -32,9 +32,8 @@ type GameStateMessage struct {
 }
 
 type PickupMessage struct {
-	X    int
-	Y    int
-	Type byte
+	X int
+	Y int
 }
 
 type PlayerMessage struct {

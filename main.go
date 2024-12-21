@@ -32,6 +32,7 @@ Send some hash to show code is not modified. What about replay attacks?
 */
 
 var SendWithBinary = true
+
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
