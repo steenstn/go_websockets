@@ -100,7 +100,6 @@ In a production environment, make sure to validate the origin to avoid Cross-Sit
 func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 
 	println(request.Host)
-	println(request.Header.Values)
 	conn, upgradeError := upgrader.Upgrade(responseWriter, request, nil)
 	if upgradeError != nil {
 		println("Failed to upgrade")
