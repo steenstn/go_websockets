@@ -96,7 +96,12 @@ In a production environment, make sure to validate the origin to avoid Cross-Sit
 */
 func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 
-	conn, _ := upgrader.Upgrade(responseWriter, request, nil)
+	conn, upgradeError := upgrader.Upgrade(responseWriter, request, nil)
+	if upgradeError != nil {
+		println("Failed to upgrade")
+		println(upgradeError.Error())
+		return
+	}
 	//sendByteMessageToClient(conn, GameSetup, []byte("aaa"))
 	//sendGameSetupMessage(conn, )
 	_, msg, msgError := conn.ReadMessage()
