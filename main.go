@@ -223,7 +223,7 @@ func broadcastGameState(gameState game.GameStateMessage) {
 	}
 }
 
-func broadcastMessageToActiveClients(clients *[]*Client, messageType MessageType, message any) {
+func broadcastMessageToActiveClients(clients *[]*Client, messageType MessageType, message interface{}) {
 	var jsonMessage, err = json.Marshal(message)
 	if err != nil {
 		println("Failed to marshall message")
