@@ -80,7 +80,7 @@
     let c = document.getElementById('c');
 
     let input = document.getElementById("input");
-    input.value = document.location.href.replace(/https?:\/\//g, "").replace(":8080/", "");
+    input.value = document.location.href.replace(/https?:\/\//g, "").replace(":8080/", "").replace("/","");
 
     let names = ["William Snakespeare",
         "Hissy Elliott",
