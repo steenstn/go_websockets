@@ -13,6 +13,10 @@ type Message struct {
 
 type MessageType byte
 
+type BinaryMessage interface {
+	toByteArray() []byte
+}
+
 const (
 	TextMessage      MessageType = 0
 	GameStateUpdate              = 1
@@ -20,19 +24,16 @@ const (
 	PlayerListUpdate             = 3
 )
 
-func sendGameSetupMessage(connection *websocket.Conn, message GameSetupMessage) {
-	binaryMessage := makeBinaryMessage(message)
-	connection.WriteMessage(websocket.BinaryMessage, binaryMessage)
+func sendMessage(connection *websocket.Conn, message BinaryMessage) {
+	binaryMessage := message.toByteArray()
+	err := connection.WriteMessage(websocket.BinaryMessage, binaryMessage)
+	if err != nil {
+		fmt.Printf("Failed to send message: %s", err)
+	}
 }
 
-func makeBinaryMessage(message GameSetupMessage) []byte {
-	byteArray := make([]byte, 5)
-	byteArray[0] = GameSetup
-	byteArray[1] = byte(message.LevelWidth >> 8)
-	byteArray[2] = byte(message.LevelWidth)
-	byteArray[3] = byte(message.LevelHeight >> 8)
-	byteArray[4] = byte(message.LevelHeight)
-	return byteArray
+func sendTextMessage(connection *websocket.Conn, message string) {
+
 }
 
 // Websocket binary 81

@@ -28,8 +28,6 @@ Anti cheat
 Send some hash to show code is not modified. What about replay attacks?
 */
 
-var SendWithBinary = true
-
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -57,6 +55,10 @@ type PlayerListEntry struct {
 type GameSetupMessage struct {
 	LevelWidth  int
 	LevelHeight int
+}
+
+type TextInfoMessage struct {
+	Text string
 }
 
 var clients = make([]*Client, 20)
@@ -106,8 +108,6 @@ func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 		println(upgradeError.Error())
 		return
 	}
-	//sendByteMessageToClient(conn, GameSetup, []byte("aaa"))
-	//sendGameSetupMessage(conn, )
 	_, msg, msgError := conn.ReadMessage()
 
 	if msgError != nil {
@@ -121,19 +121,15 @@ func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 	client, err := createClient(conn, gameJoinRequest.SnakeColor, gameJoinRequest.SnakeName)
 	if err != nil {
 		println(err.Error())
-		sendMessageToClient(conn, TextMessage, []byte("Cannot connect. Too many players"))
+		sendMessage(conn, &TextInfoMessage{"Cannot connect. Too many players"})
+		//sendMessageToClient(conn, TextMessage, []byte("Cannot connect. Too many players"))
 		conn.Close()
 		return
 	}
 	//clients = append(clients, client)
 
 	gameSetup := GameSetupMessage{LevelWidth: game.LevelWidth, LevelHeight: game.LevelHeight}
-	if SendWithBinary {
-		sendGameSetupMessage(client.connection, gameSetup)
-	} else {
-		outgoingMessage, _ := json.Marshal(gameSetup)
-		sendMessageToClient(client.connection, GameSetup, outgoingMessage)
-	}
+	sendMessage(client.connection, &gameSetup)
 
 	broadcastPlayerlist(&clients)
 	go inputLoop(client)
