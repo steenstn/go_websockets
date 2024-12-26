@@ -185,10 +185,6 @@
                 case MessageType.GameStateUpdate:
                     handleGameStateUpdate(message);
                     break;
-                case MessageType.GameSetup:
-                    let data = parseMessage(message)
-                    handleGameSetup(data.LevelWidth, data.LevelHeight);
-                    break;
                 case MessageType.PlayerListUpdate:
                     handlePlayerListUpdate(message);
                     break;
