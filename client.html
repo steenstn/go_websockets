@@ -81,7 +81,7 @@
     let c = document.getElementById('c');
 
     let input = document.getElementById("input");
-    input.value = document.location.href.replace(/https?:\/\//g, "").replace(":8080/", "").replace("/","");
+    input.value = document.location.href.replace(/https?:\/\//g, "").replace(":8080/", "").replace("/", "");
 
     let names = ["William Snakespeare",
         "Hissy Elliott",
@@ -153,9 +153,16 @@
                 let messageType = byteArray[1];
                 switch (messageType) {
                     case MessageType.GameSetup:
-                        let width =  byteArray[2];
-                        let height =  byteArray[3];
+                        let width = byteArray[2];
+                        let height = byteArray[3];
                         handleGameSetup(width, height);
+                        break;
+                    case MessageType.TextMessage:
+                        let messageString = "";
+                        byteArray.slice(2).forEach((s) => {
+                            messageString += String.fromCharCode(s);
+                        })
+                        handleTextMessage(messageString)
                         break;
                     default:
                         console.log("Unknown type " + type)
@@ -168,9 +175,6 @@
             let message = atob(json.Msg);
             //console.log(message)
             switch (type) {
-                case MessageType.TextMessage:
-                    handleTextMessage(message);
-                    break;
                 case MessageType.GameStateUpdate:
                     handleGameStateUpdate(message);
                     break;
