@@ -1,6 +1,6 @@
 package main
 
-var messageVersion byte = 1
+const messageVersion byte = 1
 
 func (message *GameSetupMessage) toByteArray() []byte {
 	byteArray := make([]byte, 4)
