@@ -65,6 +65,7 @@
     "use strict";
     let socket;
     let keyDownCounter = 0;
+    const messageVersion = 1;
     const MessageType = {
         TextMessage: 0,
         GameStateUpdate: 1,
@@ -148,11 +149,12 @@
             let byteArray = new Uint8Array(e.data)
             if (byteArray.length > 0) {
                 console.log("Byte message: ", byteArray)
-                let messageType = byteArray[0];
+                let version = byteArray[0];
+                let messageType = byteArray[1];
                 switch (messageType) {
                     case MessageType.GameSetup:
-                        let width = (byteArray[1] << 8) + byteArray[2];
-                        let height = (byteArray[3] << 8) + byteArray[4];
+                        let width =  byteArray[2];
+                        let height =  byteArray[3];
                         handleGameSetup(width, height);
                         break;
                     default:
