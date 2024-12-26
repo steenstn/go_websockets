@@ -140,7 +140,7 @@
             let snakeName = document.getElementById("snakeName").value;
             socket.send(`{"snakeColor":"${snakeColor}", "snakeName":"${snakeName}"}`)
         };
-        setInterval(gameLoop, 10);
+        setInterval(gameLoop, 30);
     }
 
     function setupSocket(hostUrl, endpoint) {
