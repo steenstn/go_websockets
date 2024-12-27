@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/websocket"
 	"go_project/game"
 	"go_project/requests"
@@ -101,7 +102,7 @@ In a production environment, make sure to validate the origin to avoid Cross-Sit
 */
 func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 
-	println(request.Host)
+	fmt.Printf("%s connected\n", request.Host)
 
 	conn, upgradeError := upgrader.Upgrade(responseWriter, request, nil)
 	if upgradeError != nil {
@@ -119,6 +120,9 @@ func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 	gameJoinRequest := requests.GameJoinRequest{}
 	json.Unmarshal(msg, &gameJoinRequest)
 
+	fmt.Printf("Name: %s\n", gameJoinRequest.SnakeName)
+	fmt.Printf("Color: %s\n", gameJoinRequest.SnakeColor)
+
 	client, err := createClient(conn, gameJoinRequest.SnakeColor, gameJoinRequest.SnakeName)
 	if err != nil {
 		println(err.Error())
@@ -127,7 +131,7 @@ func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 		conn.Close()
 		return
 	}
-	//clients = append(clients, client)
+	sendMessage(conn, &TextInfoMessage{"Connected"})
 
 	gameSetup := GameSetupMessage{LevelWidth: game.LevelWidth, LevelHeight: game.LevelHeight}
 	sendMessage(client.connection, &gameSetup)
@@ -151,7 +155,7 @@ func broadcastPlayerlist(clients *[]*Client) {
 			Score: client.player.TailLength,
 		})
 	}
-	broadcastMessageToActiveClients(clients, PlayerListUpdate, playerListUpdate)
+	broadcastByteMessageToActiveClients(clients, &playerListUpdate)
 }
 
 func createClient(connection *websocket.Conn, snakeColor string, name string) (*Client, error) {
@@ -229,6 +233,16 @@ func broadcastGameState(gameState game.GameStateMessage) {
 	}
 }
 
+func broadcastByteMessageToActiveClients(clients *[]*Client, message GameMessage) {
+	for i := 0; i < len(*clients); i++ {
+		client := (*clients)[i]
+		if client == nil || !client.connected {
+			continue
+		}
+
+		sendMessage(client.connection, message)
+	}
+}
 func broadcastMessageToActiveClients(clients *[]*Client, messageType MessageType, message interface{}) {
 	var jsonMessage, err = json.Marshal(message)
 	if err != nil {
