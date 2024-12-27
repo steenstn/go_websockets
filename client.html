@@ -291,7 +291,7 @@
     function handleTextMessage(message) {
         let serverLog = document.getElementById("serverLog");
         let li = document.createElement("li");
-        li.appendChild(document.createTextNode(message));
+        li.appendChild(document.createTextNode(new Date().toLocaleString() + ": " + message));
         serverLog.appendChild(li)
         let logEntries = serverLog.getElementsByTagName('li');
         if (logEntries.length > 5) {
