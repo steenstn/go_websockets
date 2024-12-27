@@ -250,18 +250,22 @@
         let index = 2;
         while (index < message.length) {
             let nameLength = message[index];
-            let messageString = "";
-            message.slice(index + 1, index + nameLength + 1).forEach((s) => {
-                messageString += String.fromCharCode(s);
-            });
-            let name = messageString
 
-            index += messageString.length + 1;
-            messageString = "";
-            message.slice(index, index + 7).forEach((s) => {
-                messageString += String.fromCharCode(s);
+            // Get the name from the array
+            let nameString = "";
+            message.slice(index + 1, index + nameLength + 1).forEach((s) => {
+                nameString += String.fromCharCode(s);
             });
-            let color = messageString;
+            let name = nameString
+
+            index += nameString.length + 1;
+
+            // Get the color from the array
+            let colorString = "";
+            message.slice(index, index + 7).forEach((s) => {
+                colorString += String.fromCharCode(s);
+            });
+            let color = colorString;
             index += 7
             let score = (message[index] << 8) + message[index + 1]
 
@@ -272,20 +276,6 @@
             playerList.appendChild(li)
         }
 
-    }
-
-    function handlePlayerListUpdate(message) {
-        let data = parseMessage(message)
-        let entries = data.Entries;
-
-        let playerList = document.getElementById("playerList");
-        playerList.textContent = '';
-        for (let i = 0; i < entries.length; i++) {
-            let li = document.createElement("li");
-            li.setAttribute("style", `color:${entries[i].Color};`);
-            li.appendChild(document.createTextNode(entries[i].Score + ": " + entries[i].Name));
-            playerList.appendChild(li)
-        }
     }
 
     function handleTextMessage(message) {
