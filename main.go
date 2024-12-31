@@ -93,7 +93,7 @@ func gameLoop() {
 
 		broadcastGameState(gameState)
 		if gameState.state.ScoreChanged {
-			broadcastPlayerlist(&clients)
+			broadcastPlayerList(&clients)
 		}
 
 		time.Sleep(80 * time.Millisecond)
@@ -140,12 +140,12 @@ func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 	gameSetup := GameSetupMessage{LevelWidth: game.LevelWidth, LevelHeight: game.LevelHeight}
 	sendMessage(client.connection, &gameSetup)
 
-	broadcastPlayerlist(&clients)
+	broadcastPlayerList(&clients)
 	go inputLoop(client)
 	println("Game started")
 }
 
-func broadcastPlayerlist(clients *[]*Client) {
+func broadcastPlayerList(clients *[]*Client) {
 	playerListUpdate := PlayerListUpdateMessage{make([]PlayerListEntry, 0)}
 
 	for i := 0; i < len(*clients); i++ {
