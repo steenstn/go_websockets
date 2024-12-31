@@ -135,7 +135,9 @@ func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 		conn.Close()
 		return
 	}
-	sendMessage(conn, &TextInfoMessage{"Connected"})
+
+	joinMessage := gameJoinRequest.SnakeName + " connected"
+	broadcastByteMessageToActiveClients(&clients, &TextInfoMessage{joinMessage})
 
 	gameSetup := GameSetupMessage{LevelWidth: game.LevelWidth, LevelHeight: game.LevelHeight}
 	sendMessage(client.connection, &gameSetup)
@@ -220,13 +222,21 @@ func broadcastGameState(gameState GameStateMessageWrapper) {
 	if len(gameState.state.Players) > 0 {
 		gameState.state.Players[0].Tail = getCorners(gameState.state.Players[0].Tail)
 	}
+
+	// TODO - Make this a binary message
 	var message, _ = json.Marshal(gameState.state)
 	for i := 0; i < len(clients); i++ {
 		if clients[i] == nil {
 			continue
 		}
 		if !clients[i].connected {
-			clients[i].connection.Close()
+			err := clients[i].connection.Close()
+			if err != nil {
+				println("Failed to close connection")
+				continue
+			}
+			broadcastByteMessageToActiveClients(&clients, &TextInfoMessage{clients[i].player.Name + " disconnected"})
+			clients[i] = nil
 			continue
 		}
 		var err = sendMessageToClient(clients[i].connection, GameStateUpdate, message)
