@@ -212,7 +212,7 @@ func inputLoop(c *Client) {
 		//fmt.Printf("%s sent: %s\n", c.connection.RemoteAddr(), message)
 
 		var input = string(msg)
-		game.SetWantedDirection(&c.player, input)
+		game.HandleInput(&c.player, input)
 	}
 }
 

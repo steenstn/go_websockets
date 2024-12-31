@@ -70,7 +70,7 @@ func InitGame() {
 	}
 }
 
-func SetWantedDirection(player *Player, input string) {
+func HandleInput(player *Player, input string) {
 	if input == "U" && player.wantedDirection != down {
 		player.wantedDirection = up
 	} else if input == "L" && player.wantedDirection != right {
@@ -79,6 +79,10 @@ func SetWantedDirection(player *Player, input string) {
 		player.wantedDirection = down
 	} else if input == "R" && player.wantedDirection != left {
 		player.wantedDirection = right
+	} else if input == "S" {
+		if !player.alive {
+			spawnPlayer(player)
+		}
 	}
 }
 
@@ -140,14 +144,25 @@ func CreatePlayer(name string, color string) Player {
 		wantedDirection: down,
 		snake:           make([]TailSegment, 100),
 		alive:           true,
-		TailLength:      1,
+		TailLength:      3,
 		SnakeColor:      color,
 		Name:            name,
 	}
 
+	spawnPlayer(&player)
+	return player
+}
+
+func spawnPlayer(player *Player) {
+	player.direction = down
+	player.wantedDirection = down
+	player.alive = true
 	player.snake[0].x = 20 + rand.Intn(LevelWidth-40)
 	player.snake[0].y = 10
-	return player
+	for i := 1; i < player.TailLength; i++ {
+		player.snake[i].x = player.snake[0].x
+		player.snake[i].y = player.snake[i-1].y - 1
+	}
 }
 
 func toTailMessage(tailSegment []TailSegment, tailLength int) []TailMessage {

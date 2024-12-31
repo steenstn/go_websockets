@@ -136,6 +136,8 @@
         setupKeyListeners();
         setupSocket(trimmedValue, "join");
         socket.onopen = () => {
+            let connectButton = document.getElementById("connectButton")
+            connectButton.disabled = true;
             let snakeColor = document.getElementById("snakeColor").value;
             let snakeName = document.getElementById("snakeName").value;
             socket.send(`{"snakeColor":"${snakeColor}", "snakeName":"${snakeName}"}`)
@@ -146,10 +148,6 @@
     function setupSocket(hostUrl, endpoint) {
         socket = new WebSocket("ws://" + hostUrl + ":8080/" + endpoint);
         socket.binaryType = "arraybuffer"
-
-        socket.onopen = () => {
-            console.log("Status: Connected");
-        };
 
         socket.onmessage = function (e) {
             //console.log("aa", e.data)
@@ -342,15 +340,15 @@
         } else if ("ArrowRight" in keysDown) {
             socket.send("R");
         }
-        /*if ("x" in keysHit) {
-            socket.send("space");
+        if ("r" in keysHit) {
+            socket.send("S");
             delete keysHit["x"];
-        }*/
+        }
     }
 
-    function changeDirection(direction) {
-        pressKey(direction);
-        setTimeout(() => releaseKey(direction), 31);
+    function simulateKeyPress(key) {
+        pressKey(key);
+        setTimeout(() => releaseKey(key), 31);
     }
 
 </script>
@@ -359,19 +357,22 @@
         <td>
             <div class="input-section">
                 <div>
-                    <button id="buttonUp" class="input-button" onmousedown="changeDirection('ArrowUp')">Up</button>
+                    <button id="buttonUp" class="input-button" onmousedown="simulateKeyPress('ArrowUp')">Up</button>
                 </div>
                 <div>
-                    <button id="buttonLeft" class="input-button" onmousedown="changeDirection('ArrowLeft')">Left
+                    <button id="buttonLeft" class="input-button" onmousedown="simulateKeyPress('ArrowLeft')">Left
                     </button>
-                    <button id="buttonRight" class="input-button" onmousedown="changeDirection('ArrowRight')">Right
+                    <button id="buttonRight" class="input-button" onmousedown="simulateKeyPress('ArrowRight')">Right
                     </button>
                 </div>
                 <div>
-                    <button id="buttonDown" class="input-button" onmousedown="changeDirection('ArrowDown')">Down
+                    <button id="buttonDown" class="input-button" onmousedown="simulateKeyPress('ArrowDown')">Down
                     </button>
                 </div>
-
+                <div>
+                    <button id="buttonRespawn" class="input-button" onmousedown="simulateKeyPress('r')">Respawn
+                    </button>
+                </div>
             </div>
         </td>
         <td>
