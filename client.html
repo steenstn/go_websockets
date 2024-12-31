@@ -226,7 +226,6 @@
                 ctx.fillRect(players[i].Tail[j].X * scale, players[i].Tail[j].Y * scale, scale, scale);
             }*/
             drawSnake(players[i].Tail);
-
         }
 
         let pickups = data.Pickups
@@ -253,7 +252,6 @@
             let drawingX = a.X;
             let drawingY = a.Y;
             while (numIterations++ < 255) {
-
                 ctx.fillRect(drawingX * scale, drawingY * scale, scale, scale);
                 drawingX += deltaX;
                 drawingY += deltaY;
@@ -267,14 +265,6 @@
         ctx.fillRect(lastTailPart.X*scale, lastTailPart.Y*scale, scale, scale);
     }
 
-    /*
-    2,2
-
-    2,4 = 0 2
-
-    2,1 = 0 -1
-
-     */
     function handleGameSetup(width, height) {
         levelWidth = width;
         levelHeight = height;
