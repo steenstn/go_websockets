@@ -77,7 +77,32 @@ func main() {
 		http.ServeFile(w, r, "client.html")
 	})
 
+	http.HandleFunc("/get-status", status)
+	http.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "status.html")
+	})
+
 	http.ListenAndServe(":8080", nil)
+}
+
+type ClientInfo struct {
+	Name          string
+	RemoteAddress string
+	LocalAddress  string
+}
+
+func status(w http.ResponseWriter, r *http.Request) {
+	statusMessage := make([]ClientInfo, len(clients))
+	for i := 0; i < len(clients); i++ {
+		if clients[i] != nil {
+			statusMessage[i].Name = clients[i].player.Name
+			statusMessage[i].RemoteAddress = clients[i].connection.RemoteAddr().String()
+			statusMessage[i].LocalAddress = clients[i].connection.LocalAddr().String()
+		}
+
+	}
+	jsonMessage, _ := json.Marshal(statusMessage)
+	w.Write(jsonMessage)
 }
 
 // Do this with channels instead?

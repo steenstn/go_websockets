@@ -1,0 +1,54 @@
+<html>
+<head>
+    <style>
+
+        ul {
+            list-style-type: none;
+        }
+    </style>
+</head>
+
+<body>
+<ul id="clients"></ul>
+<script>
+
+
+    let updatePage = () => {
+        let clients = document.getElementById("clients")
+        clients.textContent = '';
+        let xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function () {
+            if (this.readyState === 4 && this.status === 200) {
+                let data = JSON.parse(xhttp.responseText)
+                for (let i = 0; i < data.length; i++) {
+                    let li = document.createElement("li");
+                    if (data[i].Name === "") {
+                        li.appendChild(document.createTextNode("null"));
+                        li.appendChild(document.createElement("br"))
+                        clients.appendChild(li)
+
+                        continue
+                    }
+
+                    //li.setAttribute("style", `color:${color};`);
+                    li.appendChild(document.createTextNode(data[i].Name));
+                    li.appendChild(document.createElement("br"));
+                    li.appendChild(document.createTextNode("Remote address: " + data[i].RemoteAddress));
+                    li.appendChild(document.createElement("br"));
+                    li.appendChild(document.createTextNode("Local address: " + data[i].LocalAddress));
+                    li.appendChild(document.createElement("br"));
+                    li.appendChild(document.createElement("br"));
+                    clients.appendChild(li)
+                }
+            }
+        };
+        xhttp.open("GET", "/get-status", true);
+        xhttp.send();
+    }
+
+    updatePage();
+    setInterval(updatePage, 2000);
+
+</script>
+</body>
+</html>
