@@ -157,6 +157,7 @@ func spawnPlayer(player *Player) {
 	player.direction = down
 	player.wantedDirection = down
 	player.alive = true
+	player.TailLength = 3
 	player.snake[0].x = 20 + rand.Intn(LevelWidth-40)
 	player.snake[0].y = 10
 	for i := 1; i < player.TailLength; i++ {
