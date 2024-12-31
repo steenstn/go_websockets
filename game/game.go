@@ -37,11 +37,8 @@ type PickupMessage struct {
 }
 
 type PlayerMessage struct {
-	X         int
-	Y         int
-	Direction Direction
-	Color     string
-	Tail      []TailMessage
+	Color string
+	Tail  []TailMessage
 }
 
 type TailMessage struct {
@@ -114,13 +111,13 @@ func Tick(players []*Player) GameStateMessage {
 
 		scoreChanged = checkCollisionsWithPickups(players[i])
 
-		wrapAround(players[i], LevelWidth, LevelHeight, 0)
+		if isOutOfBounds(players[i], LevelWidth, LevelHeight) {
+			players[i].alive = false
+		}
 
-		clientPositions = append(clientPositions, PlayerMessage{X: players[i].snake[0].x,
-			Y:         players[i].snake[0].y,
-			Direction: players[i].direction,
-			Color:     players[i].SnakeColor,
-			Tail:      toTailMessage(players[i].snake, players[i].TailLength)})
+		clientPositions = append(clientPositions, PlayerMessage{
+			Color: players[i].SnakeColor,
+			Tail:  toTailMessage(players[i].snake, players[i].TailLength)})
 	}
 
 	// Update pickups
@@ -143,7 +140,7 @@ func CreatePlayer(name string, color string) Player {
 		wantedDirection: down,
 		snake:           make([]TailSegment, 100),
 		alive:           true,
-		TailLength:      5,
+		TailLength:      1,
 		SnakeColor:      color,
 		Name:            name,
 	}
@@ -216,6 +213,10 @@ func checkCollisionsWithPickups(player *Player) bool {
 		}
 	}
 	return false
+}
+
+func isOutOfBounds(position *Player, xMax int, yMax int) bool {
+	return position.snake[0].x >= xMax || position.snake[0].x < 0 || position.snake[0].y >= yMax || position.snake[0].y < 0
 }
 
 func wrapAround(position *Player, xMax int, yMax int, buffer int) {

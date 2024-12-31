@@ -37,6 +37,10 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+type GameStateMessageWrapper struct {
+	state game.GameStateMessage
+}
+
 type Client struct {
 	connection *websocket.Conn
 	connected  bool
@@ -85,10 +89,10 @@ func gameLoop() {
 				activeClients = append(activeClients, &clients[i].player)
 			}
 		}
-		gameState := game.Tick(activeClients)
+		gameState := GameStateMessageWrapper{state: game.Tick(activeClients)}
 
 		broadcastGameState(gameState)
-		if gameState.ScoreChanged {
+		if gameState.state.ScoreChanged {
 			broadcastPlayerlist(&clients)
 		}
 
@@ -127,7 +131,7 @@ func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		println(err.Error())
 		sendMessage(conn, &TextInfoMessage{"Cannot connect. Too many players"})
-		//sendMessageToClient(conn, TextMessage, []byte("Cannot connect. Too many players"))
+
 		conn.Close()
 		return
 	}
@@ -212,8 +216,11 @@ func inputLoop(c *Client) {
 	}
 }
 
-func broadcastGameState(gameState game.GameStateMessage) {
-	var message, _ = json.Marshal(gameState)
+func broadcastGameState(gameState GameStateMessageWrapper) {
+	if len(gameState.state.Players) > 0 {
+		gameState.state.Players[0].Tail = getCorners(gameState.state.Players[0].Tail)
+	}
+	var message, _ = json.Marshal(gameState.state)
 	for i := 0; i < len(clients); i++ {
 		if clients[i] == nil {
 			continue
@@ -241,23 +248,5 @@ func broadcastByteMessageToActiveClients(clients *[]*Client, message GameMessage
 		}
 
 		sendMessage(client.connection, message)
-	}
-}
-func broadcastMessageToActiveClients(clients *[]*Client, messageType MessageType, message interface{}) {
-	var jsonMessage, err = json.Marshal(message)
-	if err != nil {
-		println("Failed to marshall message")
-	}
-
-	for i := 0; i < len(*clients); i++ {
-		client := (*clients)[i]
-		if client == nil || !client.connected {
-			continue
-		}
-
-		var err = sendMessageToClient(client.connection, messageType, jsonMessage)
-		if err != nil {
-			println("Failed to send message")
-		}
 	}
 }

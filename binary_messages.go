@@ -1,5 +1,7 @@
 package main
 
+import "go_project/game"
+
 const messageVersion byte = 1
 
 /*
@@ -18,7 +20,7 @@ func (message *GameSetupMessage) toByteArray() []byte {
 }
 
 func (message *TextInfoMessage) toByteArray() []byte {
-	var messageLength = len(message.Text)
+	messageLength := len(message.Text)
 	headerSize := 2
 	byteArray := make([]byte, headerSize+messageLength)
 	byteArray[0] = messageVersion
@@ -31,30 +33,78 @@ func (message *TextInfoMessage) toByteArray() []byte {
 	return byteArray
 }
 
+func (message *GameStateMessageWrapper) toByteArray() []byte {
+
+	/*
+		gameState := message.state
+		headerSize := 2
+		totalPickupSize := 2 * len(gameState.Pickups) // X and Y for each pickup
+
+		for playerIndex := 0; playerIndex < len(gameState.Players); playerIndex++ {
+
+		}
+	*/
+	/*
+		   message.state.ScoreChanged bool
+		   message.state.Pickups[]
+				X Y
+		   message.state.Players[]
+				Color
+				Tail[]
+					X
+					Y
+	*/
+	return nil
+}
+
 /*
-	type PlayerListUpdateMessage struct {
-		Entries []PlayerListEntry
+Get the corners plus endpoints from a continuous snake
+*/
+func getCorners(positions []game.TailMessage) []game.TailMessage {
+	corners := make([]game.TailMessage, getCornerCount(&positions))
+	if len(positions) == 0 {
+		return corners
+	}
+	index := 0
+
+	corners[index] = positions[0]
+	index++
+
+	for i := 1; i < len(positions)-1; i++ {
+		a := positions[i-1]
+		b := positions[i+1]
+		if a.X != b.X && a.Y != b.Y {
+			corners[index] = positions[i]
+			index++
+		}
 	}
 
-	type PlayerListEntry struct {
-		Name  string
-		Color string
-		Score int
+	corners[index] = positions[len(positions)-1]
+	return corners
+}
+
+func getCornerCount(positions *[]game.TailMessage) int {
+	numCorners := 0
+	for i := 1; i < len(*positions)-1; i++ {
+		a := (*positions)[i-1]
+		b := (*positions)[i+1]
+		if a.X != b.X && a.Y != b.Y {
+			numCorners++
+		}
 	}
+	numCorners += 2 // Add start and end point
+	return numCorners
+}
+
+/*
 0 - message version
 1 - message type
 2..n array of entities
 
 In one entity:
-0 - name length
-1..n - name
-
-n+1..(n+1)+7 - color (#FFFFFF format)
-(n+9)..n+11 - score (2 bytes)
-
 1 byte - name length
 x bytes - name
-7 bytes - color (Hexadecimal #FFFFFF format )
+7 bytes - color (Hexadecimal #FFFFFF format)
 2 bytes - score
 */
 
@@ -68,6 +118,7 @@ func (message *PlayerListUpdateMessage) toByteArray() []byte {
 	allNameSizes := numEntries + nameLengthSum // for each player: 1 byte for the string length and the string length itself
 	allScoreSize := 2 * numEntries             // 2 bytes for the score
 	allColorSizes := 7 * numEntries            // 7 bytes for the color (#abc123)
+
 	byteArray := make([]byte, headerSize+allNameSizes+allScoreSize+allColorSizes)
 
 	byteArray[0] = messageVersion
