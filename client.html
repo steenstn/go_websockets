@@ -113,10 +113,7 @@
     let keysDown = {};
     let keysHit = {};
 
-
     function pressKey(key) {
-        //console.log("down " + key)
-
         keysDown[key] = true;
         keyDownCounter++;
         if (keyDownCounter === 1) {
@@ -125,14 +122,9 @@
     }
 
     function releaseKey(key) {
-        // console.log(key)
         keyDownCounter = 0;
         delete keysDown[key];
         delete keysHit[key];
-    }
-
-    function parseMessage(message) {
-        return JSON.parse(message);
     }
 
     function joinGame() {
@@ -194,21 +186,7 @@
                     default:
                         console.log("Unknown type " + type)
                 }
-                return
             }
-
-            let json = parseMessage(e.data)
-            let type = json.Type
-            let message = atob(json.Msg);
-            //console.log(message)
-            switch (type) {
-                case MessageType.GameStateUpdate:
-                    handleGameStateUpdate(message);
-                    break;
-                default:
-                    console.log("Unknown type " + type)
-            }
-
         };
     }
 
@@ -232,7 +210,6 @@
         }, false);
     }
 
-
     function handleGameStateUpdateBinary(message) {
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
@@ -244,13 +221,13 @@
             index += 7;
             let tailLength = message[index++];
 
-            for (let tailIndex = 0; tailIndex < tailLength-1; tailIndex++) {
+            for (let tailIndex = 0; tailIndex < tailLength - 1; tailIndex++) {
                 let x1 = message[index]
-                let y1 = message[index+1]
-                let x2 = message[index+2]
-                let y2 = message[index+3]
-                drawLine(x1,y1,x2,y2);
-                index+=2
+                let y1 = message[index + 1]
+                let x2 = message[index + 2]
+                let y2 = message[index + 3]
+                drawLine(x1, y1, x2, y2);
+                index += 2
             }
             ctx.fillRect(message[index++] * scale, message[index++] * scale, scale, scale);
 
@@ -263,28 +240,6 @@
 
         if (index !== message.length) {
             console.error("Have not read full game state update message: index = " + index + " message length = " + message.length)
-        }
-    }
-
-    function handleGameStateUpdate(message) {
-        let data = parseMessage(message);
-        //console.log(data)
-        ctx.fillStyle = "#000";
-        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-        let players = data.Players;
-        for (let i = 0; i < players.length; i++) {
-            ctx.fillStyle = players[i].Color
-            /*
-                        for (let j = 0; j < players[i].Tail.length; j++) {
-                            ctx.fillRect(players[i].Tail[j].X * scale, players[i].Tail[j].Y * scale, scale, scale);
-                        }*/
-            drawSnake(players[i].Tail);
-        }
-
-        let pickups = data.Pickups
-        for (let i = 0; i < pickups.length; i++) {
-            ctx.fillStyle = "#4e6";
-            ctx.fillRect(pickups[i].X * scale, pickups[i].Y * scale, scale, scale);
         }
     }
 
@@ -304,22 +259,6 @@
                 break;
             }
         }
-    }
-
-    function drawSnake(corners) {
-        if (corners.length === 0) {
-            return
-        }
-        if (corners.length === 1) {
-            ctx.fillRect(corners[0].X * scale, corners[0].Y * scale, scale, scale);
-        }
-        for (let i = 0; i < corners.length - 1; i++) {
-            let a = corners[i];
-            let b = corners[i + 1];
-            drawLine(a.X, a.Y, b.X, b.Y);
-        }
-        let lastTailPart = corners[corners.length - 1]
-        ctx.fillRect(lastTailPart.X * scale, lastTailPart.Y * scale, scale, scale);
     }
 
     function handleGameSetup(width, height) {
@@ -362,7 +301,6 @@
             li.appendChild(document.createTextNode(score + ": " + name));
             playerList.appendChild(li)
         }
-
     }
 
     function handleHighscoreUpdate(message) {
