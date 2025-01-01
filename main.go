@@ -256,10 +256,6 @@ func inputLoop(c *Client) {
 }
 
 func broadcastGameState(gameState GameStateMessageWrapper) {
-	if len(gameState.state.Players) > 0 {
-		gameState.state.Players[0].Tail = getCorners(gameState.state.Players[0].Tail)
-	}
-
 	//	var message, _ = json.Marshal(gameState.state)
 	for i := 0; i < len(clients); i++ {
 		if clients[i] == nil {

@@ -1,6 +1,8 @@
 package main
 
-import "go_project/game"
+import (
+	"go_project/game"
+)
 
 const messageVersion byte = 1
 
@@ -48,10 +50,8 @@ func (message *GameStateMessageWrapper) toByteArray() []byte {
 	totalTailLengthSize := 0
 	players := &message.state.Players
 	numPlayers := len(message.state.Players)
-	for i := 0; i < len(message.state.Players); i++ {
-		for tailIndex := 0; tailIndex < len((*players)[i].Tail); tailIndex++ {
-			totalTailLengthSize += 2 // X and Y for each position
-		}
+	for i := 0; i < numPlayers; i++ {
+		totalTailLengthSize += getCornerCount(&message.state.Players[i].Tail) * 2 // X and Y for each corner
 	}
 	totalTailLengthSize += numPlayers // Add one byte for each player for tail length
 
@@ -75,20 +75,26 @@ func (message *GameStateMessageWrapper) toByteArray() []byte {
 	arrayIndex := 4
 	for playerIndex := 0; playerIndex < numPlayers; playerIndex++ {
 		player := (*players)[playerIndex]
+		// Add color
 		for i := 0; i < 7; i++ {
 			byteArray[arrayIndex] = player.Color[i]
 			arrayIndex++
 		}
-		byteArray[arrayIndex] = byte(len(player.Tail))
+
+		// Convert to corners and add X and Y for each corner
+		corners := getCorners(player.Tail)
+		byteArray[arrayIndex] = byte(len(corners))
 		arrayIndex++
-		for i := 0; i < len(player.Tail); i++ {
-			byteArray[arrayIndex] = byte(player.Tail[i].X)
+
+		for i := 0; i < len(corners); i++ {
+			byteArray[arrayIndex] = byte(corners[i].X)
 			arrayIndex++
-			byteArray[arrayIndex] = byte(player.Tail[i].Y)
+			byteArray[arrayIndex] = byte(corners[i].Y)
 			arrayIndex++
 		}
 	}
 
+	// Add pickups
 	byteArray[arrayIndex] = byte(len(message.state.Pickups))
 	arrayIndex++
 	for pickupIndex := 0; pickupIndex < len(message.state.Pickups); pickupIndex++ {
@@ -100,42 +106,6 @@ func (message *GameStateMessageWrapper) toByteArray() []byte {
 
 	return byteArray
 
-	/*
-	   	type GameStateMessage struct {
-	      	Players      []PlayerMessage
-	         	Color string
-	         	Tail  []TailMessage
-	   			X int
-	   			Y int
-
-	      	Pickups      []PickupMessage
-	         	X int
-	         	Y int
-
-	      	ScoreChanged bool
-	      }
-
-
-	*/
-	/*
-		gameState := message.state
-		headerSize := 2
-		totalPickupSize := 2 * len(gameState.Pickups) // X and Y for each pickup
-
-		for playerIndex := 0; playerIndex < len(gameState.Players); playerIndex++ {
-
-		}
-	*/
-	/*
-		   message.state.ScoreChanged bool
-		   message.state.Pickups[]
-				X Y
-		   message.state.Players[]
-				Color
-				Tail[]
-					X
-					Y
-	*/
 }
 
 /*
