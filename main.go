@@ -37,6 +37,11 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+type HighScoreMessage struct {
+	Name  string
+	Score int
+}
+
 type GameStateMessageWrapper struct {
 	state game.GameStateMessage
 }
@@ -119,6 +124,10 @@ func gameLoop() {
 		broadcastGameState(gameState)
 		if gameState.state.ScoreChanged {
 			broadcastPlayerList(&clients)
+			broadcastByteMessageToActiveClients(&clients, &HighScoreMessage{
+				Name:  gameState.state.HighScore.Name,
+				Score: gameState.state.HighScore.Score,
+			})
 		}
 
 		time.Sleep(80 * time.Millisecond)

@@ -13,12 +13,17 @@ const messageVersion byte = 1
 func (message *GameSetupMessage) toByteArray() []byte {
 	byteArray := make([]byte, 4)
 	byteArray[0] = messageVersion
-	byteArray[1] = GameSetup
+	byteArray[1] = byte(GameSetup)
 	byteArray[2] = byte(message.LevelWidth)
 	byteArray[3] = byte(message.LevelHeight)
 	return byteArray
 }
 
+/*
+0 - messageVersion
+1 - message type
+3..n text message
+*/
 func (message *TextInfoMessage) toByteArray() []byte {
 	messageLength := len(message.Text)
 	headerSize := 2
@@ -107,7 +112,6 @@ x bytes - name
 7 bytes - color (Hexadecimal #FFFFFF format)
 2 bytes - score
 */
-
 func (message *PlayerListUpdateMessage) toByteArray() []byte {
 	numEntries := len(message.Entries)
 	nameLengthSum := 0
@@ -116,8 +120,8 @@ func (message *PlayerListUpdateMessage) toByteArray() []byte {
 	}
 	headerSize := 2
 	allNameSizes := numEntries + nameLengthSum // for each player: 1 byte for the string length and the string length itself
-	allScoreSize := 2 * numEntries             // 2 bytes for the score
-	allColorSizes := 7 * numEntries            // 7 bytes for the color (#abc123)
+	allScoreSize := 2 * numEntries             // 2 bytes for the score, score for every player
+	allColorSizes := 7 * numEntries            // 7 bytes for the color (#abc123), color for every player
 
 	byteArray := make([]byte, headerSize+allNameSizes+allScoreSize+allColorSizes)
 
@@ -145,5 +149,26 @@ func (message *PlayerListUpdateMessage) toByteArray() []byte {
 		index++
 	}
 
+	return byteArray
+}
+
+/*
+0 - message version
+1 - message type
+2-3 - Score
+4..n - Name
+*/
+func (message *HighScoreMessage) toByteArray() []byte {
+	nameLength := len([]rune(message.Name))
+	headerSize := 2
+	scoreSize := 2
+	byteArray := make([]byte, nameLength+headerSize+scoreSize)
+	byteArray[0] = messageVersion
+	byteArray[1] = byte(HighScoreUpdate)
+	byteArray[2] = byte(message.Score >> 8)
+	byteArray[3] = byte(message.Score)
+	for i := 0; i < nameLength; i++ {
+		byteArray[4+i] = message.Name[i]
+	}
 	return byteArray
 }

@@ -1,7 +1,6 @@
 <html>
 <head>
     <style>
-
         ul {
             list-style-type: none;
         }
@@ -11,8 +10,6 @@
 <body>
 <ul id="clients"></ul>
 <script>
-
-
     let updatePage = () => {
         let clients = document.getElementById("clients")
         clients.textContent = '';
@@ -26,7 +23,6 @@
                         li.appendChild(document.createTextNode("null"));
                         li.appendChild(document.createElement("br"))
                         clients.appendChild(li)
-
                         continue
                     }
 

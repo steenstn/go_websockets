@@ -15,6 +15,11 @@ type TailSegment struct {
 	y int
 }
 
+type TopSnake struct {
+	Name  string
+	Score int
+}
+
 type Player struct {
 	direction       Direction
 	wantedDirection Direction
@@ -29,6 +34,7 @@ type GameStateMessage struct {
 	Players      []PlayerMessage
 	Pickups      []PickupMessage
 	ScoreChanged bool
+	HighScore    TopSnake
 }
 
 type PickupMessage struct {
@@ -59,6 +65,7 @@ var LevelWidth = 80
 var LevelHeight = 60
 
 var pickups = make([]Pickup, 5)
+var topSnake = TopSnake{}
 
 func InitGame() {
 	println("Initiating game")
@@ -115,6 +122,11 @@ func Tick(players []*Player) GameStateMessage {
 
 		scoreChanged = checkCollisionsWithPickups(players[i])
 
+		if players[i].TailLength > topSnake.Score {
+			topSnake.Score = players[i].TailLength
+			topSnake.Name = players[i].Name
+		}
+
 		if isOutOfBounds(players[i], LevelWidth, LevelHeight) {
 			players[i].alive = false
 		}
@@ -134,6 +146,7 @@ func Tick(players []*Player) GameStateMessage {
 		Players:      clientPositions,
 		Pickups:      pickupPositions,
 		ScoreChanged: scoreChanged,
+		HighScore:    topSnake,
 	}
 	return gameState
 }
@@ -142,7 +155,7 @@ func CreatePlayer(name string, color string) Player {
 	player := Player{
 		direction:       down,
 		wantedDirection: down,
-		snake:           make([]TailSegment, 100),
+		snake:           make([]TailSegment, 1024),
 		alive:           true,
 		TailLength:      3,
 		SnakeColor:      color,

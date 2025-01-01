@@ -19,9 +19,10 @@ type GameMessage interface {
 
 const (
 	TextMessage      MessageType = 0
-	GameStateUpdate              = 1
-	GameSetup                    = 2
-	PlayerListUpdate             = 3
+	GameStateUpdate  MessageType = 1
+	GameSetup        MessageType = 2
+	PlayerListUpdate MessageType = 3
+	HighScoreUpdate  MessageType = 4
 )
 
 func sendMessage(connection *websocket.Conn, message GameMessage) {

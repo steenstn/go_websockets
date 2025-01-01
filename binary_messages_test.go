@@ -9,13 +9,32 @@ import (
 func TestTextMessage(t *testing.T) {
 	message := TextInfoMessage{Text: "yeah"}
 	binaryMessage := message.toByteArray()
-	assert.Equal(t, 7, len(binaryMessage))
+	assert.Equal(t, 6, len(binaryMessage))
 	assert.Equal(t, messageVersion, binaryMessage[0])
 	assert.Equal(t, TextMessage, MessageType(binaryMessage[1]))
 	assert.Equal(t, "y", string(binaryMessage[2]))
 	assert.Equal(t, "e", string(binaryMessage[3]))
 	assert.Equal(t, "a", string(binaryMessage[4]))
 	assert.Equal(t, "h", string(binaryMessage[5]))
+}
+
+func TestHighScoreMessage(t *testing.T) {
+	message := HighScoreMessage{
+		Name:  "someone",
+		Score: 666,
+	}
+	binaryMessage := message.toByteArray()
+	assert.Equal(t, 11, len(binaryMessage))
+	assert.Equal(t, messageVersion, binaryMessage[0])
+	assert.Equal(t, HighScoreUpdate, MessageType(binaryMessage[1]))
+	assert.Equal(t, 666, (int(binaryMessage[2])<<8)+int(binaryMessage[3]))
+	assert.Equal(t, "s", string(binaryMessage[4]))
+	assert.Equal(t, "o", string(binaryMessage[5]))
+	assert.Equal(t, "m", string(binaryMessage[6]))
+	assert.Equal(t, "e", string(binaryMessage[7]))
+	assert.Equal(t, "o", string(binaryMessage[8]))
+	assert.Equal(t, "n", string(binaryMessage[9]))
+	assert.Equal(t, "e", string(binaryMessage[10]))
 }
 
 func TestPlayerListUpdateMessage(t *testing.T) {
@@ -33,7 +52,7 @@ func TestPlayerListUpdateMessage(t *testing.T) {
 	// messageVersion + type + nameLengh + len(name) + color + score(2 bytes)
 	assert.Equal(t, 16, len(binaryMessage))
 	assert.Equal(t, messageVersion, binaryMessage[0])
-	//	assert.Equal(t, PlayerListUpdate, MessageType(binaryMessage[1]))
+	assert.Equal(t, PlayerListUpdate, MessageType(binaryMessage[1]))
 	assert.Equal(t, 4, int(binaryMessage[2]))
 	assert.Equal(t, "T", string(binaryMessage[3]))
 	assert.Equal(t, "e", string(binaryMessage[4]))
