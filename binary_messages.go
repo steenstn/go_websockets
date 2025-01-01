@@ -38,8 +38,85 @@ func (message *TextInfoMessage) toByteArray() []byte {
 	return byteArray
 }
 
+/*
+0 - message version
+1 - message type
+2 - flags
+3..n
+*/
 func (message *GameStateMessageWrapper) toByteArray() []byte {
+	totalTailLengthSize := 0
+	players := &message.state.Players
+	numPlayers := len(message.state.Players)
+	for i := 0; i < len(message.state.Players); i++ {
+		for tailIndex := 0; tailIndex < len((*players)[i].Tail); tailIndex++ {
+			totalTailLengthSize += 2 // X and Y for each position
+		}
+	}
+	totalTailLengthSize += numPlayers // Add one byte for each player for tail length
 
+	totalColorSize := 7 * numPlayers                   // hex color (#abc123) for each player
+	totalPickupsSize := len(message.state.Pickups) * 2 // X and Y for each pickup
+	flagsSize := 1                                     // One byte for flags. Only for score changed at the moment
+
+	headerSize := 2
+	totalByteArraySize := headerSize + 2 + totalTailLengthSize + totalColorSize + totalPickupsSize + flagsSize // 2 extra bytes for number of players and pickups
+	byteArray := make([]byte, totalByteArraySize)
+
+	byteArray[0] = messageVersion
+	byteArray[1] = byte(GameStateUpdate)
+	if message.state.ScoreChanged {
+		byteArray[2] = 1
+	} else {
+		byteArray[2] = 0
+	}
+
+	byteArray[3] = byte(numPlayers)
+	arrayIndex := 4
+	for playerIndex := 0; playerIndex < numPlayers; playerIndex++ {
+		player := (*players)[playerIndex]
+		for i := 0; i < 7; i++ {
+			byteArray[arrayIndex] = player.Color[i]
+			arrayIndex++
+		}
+		byteArray[arrayIndex] = byte(len(player.Tail))
+		arrayIndex++
+		for i := 0; i < len(player.Tail); i++ {
+			byteArray[arrayIndex] = byte(player.Tail[i].X)
+			arrayIndex++
+			byteArray[arrayIndex] = byte(player.Tail[i].Y)
+			arrayIndex++
+		}
+	}
+
+	byteArray[arrayIndex] = byte(len(message.state.Pickups))
+	arrayIndex++
+	for pickupIndex := 0; pickupIndex < len(message.state.Pickups); pickupIndex++ {
+		byteArray[arrayIndex] = byte(message.state.Pickups[pickupIndex].X)
+		arrayIndex++
+		byteArray[arrayIndex] = byte(message.state.Pickups[pickupIndex].Y)
+		arrayIndex++
+	}
+
+	return byteArray
+
+	/*
+	   	type GameStateMessage struct {
+	      	Players      []PlayerMessage
+	         	Color string
+	         	Tail  []TailMessage
+	   			X int
+	   			Y int
+
+	      	Pickups      []PickupMessage
+	         	X int
+	         	Y int
+
+	      	ScoreChanged bool
+	      }
+
+
+	*/
 	/*
 		gameState := message.state
 		headerSize := 2
@@ -59,7 +136,6 @@ func (message *GameStateMessageWrapper) toByteArray() []byte {
 					X
 					Y
 	*/
-	return nil
 }
 
 /*

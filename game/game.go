@@ -65,6 +65,7 @@ var LevelWidth = 80
 var LevelHeight = 60
 
 var pickups = make([]Pickup, 5)
+var pickupPositions = make([]PickupMessage, len(pickups))
 var topSnake = TopSnake{}
 
 func InitGame() {
@@ -72,8 +73,8 @@ func InitGame() {
 
 	for i := 0; i < len(pickups); i++ {
 		pickups[i].pickupType = 0
-		pickups[i].x = rand.Intn(2 + LevelWidth - 4)
-		pickups[i].y = rand.Intn(2 + LevelHeight - 4)
+		pickups[i].x = rand.Intn(3 + LevelWidth - 5)
+		pickups[i].y = rand.Intn(3 + LevelHeight - 5)
 	}
 }
 
@@ -94,8 +95,6 @@ func HandleInput(player *Player, input string) {
 }
 
 func Tick(players []*Player) GameStateMessage {
-
-	pickupPositions := make([]PickupMessage, len(pickups))
 	clientPositions := make([]PlayerMessage, 0)
 	scoreChanged := false
 
@@ -155,7 +154,7 @@ func CreatePlayer(name string, color string) Player {
 	player := Player{
 		direction:       down,
 		wantedDirection: down,
-		snake:           make([]TailSegment, 1024),
+		snake:           make([]TailSegment, 255),
 		alive:           true,
 		TailLength:      3,
 		SnakeColor:      color,
@@ -231,9 +230,11 @@ func checkCollisionsWithPickups(player *Player) bool {
 	for i := 0; i < len(pickups); i++ {
 		if player.snake[0].x == pickups[i].x && player.snake[0].y == pickups[i].y {
 			// Grow snake
-			player.TailLength++
-			player.snake[player.TailLength].x = player.snake[player.TailLength-1].x
-			player.snake[player.TailLength].y = player.snake[player.TailLength-1].y
+			if player.TailLength < 255 {
+				player.TailLength++
+				player.snake[player.TailLength].x = player.snake[player.TailLength-1].x
+				player.snake[player.TailLength].y = player.snake[player.TailLength-1].y
+			}
 
 			// Reposition pickup
 			pickups[i].x = rand.Intn(2 + LevelWidth - 4)

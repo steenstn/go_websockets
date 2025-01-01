@@ -150,6 +150,14 @@
         setInterval(gameLoop, 30);
     }
 
+    let extractString = (array, start, stop) => {
+        let messageString = "";
+        array.slice(start, stop).forEach((s) => {
+            messageString += String.fromCharCode(s);
+        })
+        return messageString;
+    }
+
     function setupSocket(hostUrl, endpoint) {
         socket = new WebSocket("ws://" + hostUrl + ":8080/" + endpoint);
         socket.binaryType = "arraybuffer"
@@ -158,7 +166,7 @@
             //console.log("aa", e.data)
             let byteArray = new Uint8Array(e.data)
             if (byteArray.length > 0) {
-                console.log("Byte message: ", byteArray)
+                //console.log("Byte message: ", byteArray)
                 let version = byteArray[0];
                 let messageType = byteArray[1];
                 switch (messageType) {
@@ -179,6 +187,9 @@
                         break;
                     case MessageType.HighscoreUpdate:
                         handleHighscoreUpdate(byteArray);
+                        break;
+                    case MessageType.GameStateUpdate:
+                        handleGameStateUpdateBinary(byteArray);
                         break;
                     default:
                         console.log("Unknown type " + type)
@@ -221,6 +232,40 @@
         }, false);
     }
 
+
+    function handleGameStateUpdateBinary(message) {
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        let index = 3;
+        let numPlayers = message[index];
+        index++;
+        for (let playerIndex = 0; playerIndex < numPlayers; playerIndex++) {
+            ctx.fillStyle = extractString(message, index, index + 7)
+            index += 7;
+            let tailLength = message[index++];
+
+            for (let tailIndex = 0; tailIndex < tailLength-1; tailIndex++) {
+                let x1 = message[index]
+                let y1 = message[index+1]
+                let x2 = message[index+2]
+                let y2 = message[index+3]
+                drawLine(x1,y1,x2,y2);
+                index+=2
+            }
+            ctx.fillRect(message[index++] * scale, message[index++] * scale, scale, scale);
+
+        }
+        let numPickups = message[index++];
+        for (let pickupIndex = 0; pickupIndex < numPickups; pickupIndex++) {
+            ctx.fillStyle = "#4e6";
+            ctx.fillRect(message[index++] * scale, message[index++] * scale, scale, scale);
+        }
+
+        if (index !== message.length) {
+            console.error("Have not read full game state update message: index = " + index + " message length = " + message.length)
+        }
+    }
+
     function handleGameStateUpdate(message) {
         let data = parseMessage(message);
         //console.log(data)
@@ -243,6 +288,24 @@
         }
     }
 
+    function drawLine(x1, y1, x2, y2) {
+        let dx = Math.sign(x2 - x1);
+        let dy = Math.sign(y2 - y1);
+
+        let drawingX = x1;
+        let drawingY = y1;
+        let failSafe = 255;
+        while (failSafe-- > 0) {
+            ctx.fillRect(drawingX * scale, drawingY * scale, scale, scale);
+            drawingX += dx;
+            drawingY += dy;
+
+            if (drawingX === x2 && drawingY === y2) {
+                break;
+            }
+        }
+    }
+
     function drawSnake(corners) {
         if (corners.length === 0) {
             return
@@ -253,21 +316,7 @@
         for (let i = 0; i < corners.length - 1; i++) {
             let a = corners[i];
             let b = corners[i + 1];
-
-            let deltaX = Math.sign(b.X - a.X);
-            let deltaY = Math.sign(b.Y - a.Y);
-            let numIterations = 0;
-            let drawingX = a.X;
-            let drawingY = a.Y;
-            while (numIterations++ < 255) {
-                ctx.fillRect(drawingX * scale, drawingY * scale, scale, scale);
-                drawingX += deltaX;
-                drawingY += deltaY;
-
-                if (drawingX === b.X && drawingY === b.Y) {
-                    break;
-                }
-            }
+            drawLine(a.X, a.Y, b.X, b.Y);
         }
         let lastTailPart = corners[corners.length - 1]
         ctx.fillRect(lastTailPart.X * scale, lastTailPart.Y * scale, scale, scale);

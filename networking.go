@@ -25,12 +25,13 @@ const (
 	HighScoreUpdate  MessageType = 4
 )
 
-func sendMessage(connection *websocket.Conn, message GameMessage) {
+func sendMessage(connection *websocket.Conn, message GameMessage) error {
 	binaryMessage := message.toByteArray()
 	err := connection.WriteMessage(websocket.BinaryMessage, binaryMessage)
 	if err != nil {
 		fmt.Printf("Failed to send message: %s", err)
 	}
+	return err
 }
 
 // Websocket binary 81

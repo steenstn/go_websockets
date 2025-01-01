@@ -37,6 +37,85 @@ func TestHighScoreMessage(t *testing.T) {
 	assert.Equal(t, "e", string(binaryMessage[10]))
 }
 
+func TestGameStateMessage(t *testing.T) {
+	message := GameStateMessageWrapper{game.GameStateMessage{
+		Players: []game.PlayerMessage{
+			{
+				Color: "#abc123",
+				Tail: []game.TailMessage{
+					{X: 10, Y: 20},
+					{X: 30, Y: 40},
+				},
+			},
+			{
+				Color: "#def456",
+				Tail: []game.TailMessage{
+					{X: 7, Y: 8},
+					{X: 12, Y: 11},
+					{X: 5, Y: 6},
+				},
+			},
+		},
+		Pickups: []game.PickupMessage{
+			{X: 1, Y: 2},
+			{X: 3, Y: 4},
+		},
+		ScoreChanged: true,
+		HighScore:    game.TopSnake{},
+	}}
+
+	binaryMessage := message.toByteArray()
+	assert.Equal(t, 35, len(binaryMessage))
+	assert.Equal(t, messageVersion, binaryMessage[0])
+	assert.Equal(t, GameStateUpdate, MessageType(binaryMessage[1]))
+
+	// flags
+	assert.Equal(t, 1, int(binaryMessage[2]))
+	// num players
+	assert.Equal(t, 2, int(binaryMessage[3]))
+
+	// Color of first player
+	assert.Equal(t, "#", string(binaryMessage[4]))
+	assert.Equal(t, "a", string(binaryMessage[5]))
+	assert.Equal(t, "b", string(binaryMessage[6]))
+	assert.Equal(t, "c", string(binaryMessage[7]))
+	assert.Equal(t, "1", string(binaryMessage[8]))
+	assert.Equal(t, "2", string(binaryMessage[9]))
+	assert.Equal(t, "3", string(binaryMessage[10]))
+
+	// Length and positions of first player
+	assert.Equal(t, 2, int(binaryMessage[11]))
+	assert.Equal(t, 10, int(binaryMessage[12]))
+	assert.Equal(t, 20, int(binaryMessage[13]))
+	assert.Equal(t, 30, int(binaryMessage[14]))
+	assert.Equal(t, 40, int(binaryMessage[15]))
+
+	// Color of second player
+	assert.Equal(t, "#", string(binaryMessage[16]))
+	assert.Equal(t, "d", string(binaryMessage[17]))
+	assert.Equal(t, "e", string(binaryMessage[18]))
+	assert.Equal(t, "f", string(binaryMessage[19]))
+	assert.Equal(t, "4", string(binaryMessage[20]))
+	assert.Equal(t, "5", string(binaryMessage[21]))
+	assert.Equal(t, "6", string(binaryMessage[22]))
+
+	// Length and positions of second player
+	assert.Equal(t, 3, int(binaryMessage[23]))
+	assert.Equal(t, 7, int(binaryMessage[24]))
+	assert.Equal(t, 8, int(binaryMessage[25]))
+	assert.Equal(t, 12, int(binaryMessage[26]))
+	assert.Equal(t, 11, int(binaryMessage[27]))
+	assert.Equal(t, 5, int(binaryMessage[28]))
+	assert.Equal(t, 6, int(binaryMessage[29]))
+
+	// Pickups
+	assert.Equal(t, 2, int(binaryMessage[30]))
+	assert.Equal(t, 1, int(binaryMessage[31]))
+	assert.Equal(t, 2, int(binaryMessage[32]))
+	assert.Equal(t, 3, int(binaryMessage[33]))
+	assert.Equal(t, 4, int(binaryMessage[34]))
+}
+
 func TestPlayerListUpdateMessage(t *testing.T) {
 	message := PlayerListUpdateMessage{
 		Entries: []PlayerListEntry{

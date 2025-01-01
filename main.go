@@ -14,7 +14,10 @@ import (
 Bugs
 
 TODO
--
+- Wrap around?
+ - For each point, store what direction to draw to get to the next point (x,y,direction)
+
+- Gamestate as binary array
 
 479 bytes per meddelande med json
 
@@ -257,8 +260,7 @@ func broadcastGameState(gameState GameStateMessageWrapper) {
 		gameState.state.Players[0].Tail = getCorners(gameState.state.Players[0].Tail)
 	}
 
-	// TODO - Make this a binary message
-	var message, _ = json.Marshal(gameState.state)
+	//	var message, _ = json.Marshal(gameState.state)
 	for i := 0; i < len(clients); i++ {
 		if clients[i] == nil {
 			continue
@@ -273,7 +275,8 @@ func broadcastGameState(gameState GameStateMessageWrapper) {
 			clients[i] = nil
 			continue
 		}
-		var err = sendMessageToClient(clients[i].connection, GameStateUpdate, message)
+		var err = sendMessage(clients[i].connection, &gameState)
+		//var err = sendMessageToClient(clients[i].connection, GameStateUpdate, message)
 		if err != nil {
 			closeError := clients[i].connection.Close()
 			clients[i].connected = false
