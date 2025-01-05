@@ -151,7 +151,7 @@
     }
 
     function setupSocket(hostUrl, endpoint) {
-        socket = new WebSocket("ws://" + hostUrl + ":8080/" + endpoint);
+        socket = new WebSocket("wss://" + hostUrl + ":8080/" + endpoint);
         socket.binaryType = "arraybuffer"
 
         socket.onmessage = function (e) {
