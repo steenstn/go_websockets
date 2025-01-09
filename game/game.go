@@ -61,8 +61,8 @@ const (
 	right           = 3
 )
 
-var LevelWidth = 80
-var LevelHeight = 60
+var LevelWidth = 60
+var LevelHeight = 50
 
 var pickups = make([]Pickup, 5)
 var pickupPositions = make([]PickupMessage, len(pickups))

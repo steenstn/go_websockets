@@ -90,7 +90,10 @@ func main() {
 		http.ServeFile(w, r, "status.html")
 	})
 
-	http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServeTLS(":8080", "cert.pem", "key.pem", nil)
+	if err != nil {
+		println(err)
+	}
 }
 
 type ClientInfo struct {
@@ -265,6 +268,7 @@ func broadcastGameState(gameState GameStateMessageWrapper) {
 			err := clients[i].connection.Close()
 			if err != nil {
 				println("Failed to close connection")
+				clients[i] = nil
 				continue
 			}
 			broadcastByteMessageToActiveClients(&clients, &TextInfoMessage{clients[i].player.Name + " disconnected"})
