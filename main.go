@@ -77,12 +77,13 @@ type TextInfoMessage struct {
 var clients = make([]*Client, 20)
 
 func main() {
+	includeStuff()
 	game.InitGame()
 	go gameLoop()
 
 	http.HandleFunc("/join", joinGame)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "client.html")
+		http.ServeFile(w, r, "client_out.html")
 	})
 
 	http.HandleFunc("/get-status", status)
@@ -92,6 +93,7 @@ func main() {
 
 	err := http.ListenAndServeTLS(":8080", "cert.pem", "key.pem", nil)
 	if err != nil {
+		println(":(")
 		println(err)
 	}
 }
