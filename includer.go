@@ -32,6 +32,7 @@ func includeStuff() {
 			includeFile, includeErr := os.Open(filePath)
 			if includeErr != nil {
 				log.Fatal(includeErr)
+				panic("Could not open " + filePath)
 			}
 			defer includeFile.Close()
 			includeScanner := bufio.NewScanner(includeFile)
