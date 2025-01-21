@@ -9,4 +9,4 @@ ngrok http https://localhost:8080
 Arrow keys to move
 R to respawn
 
-client.html can add // #include "file" to import files
+client.html can add `// #include "file"` to import files
