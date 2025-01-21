@@ -6,3 +6,4 @@ Join the game by going to `localhost:8080` or `<yourIpAddress>:8080` for others 
 Arrow keys to move
 R to respawn
 
+client.html can add // #include "file" to import files

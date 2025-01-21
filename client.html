@@ -114,7 +114,12 @@
     }
 
     function setupSocket(hostUrl, endpoint) {
-        socket = new WebSocket("wss://" + hostUrl + ":8080/" + endpoint);
+        /*
+        For ngrok, no port. For localhost, port
+        */
+        let portPart = hostUrl.includes("ngrok") ? "" : ":8080";
+        let target = "wss://" + hostUrl + portPart + "/" + endpoint
+        socket = new WebSocket(target);
         socket.binaryType = "arraybuffer"
 
         socket.onmessage = function (e) {
