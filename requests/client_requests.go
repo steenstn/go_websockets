@@ -14,7 +14,6 @@ func (q *GameJoinRequest) Validate() {
 		println("Invalid color")
 		q.SnakeColor = "#FFFFFF"
 	}
-	println("222")
 	if len(q.SnakeName) > 20 {
 		q.SnakeName = q.SnakeName[:20]
 	}
