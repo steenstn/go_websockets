@@ -164,9 +164,6 @@ func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 	json.Unmarshal(msg, &gameJoinRequest)
 	gameJoinRequest.Validate()
 
-	// TODO: Validate the request.
-	// Check that color is hex and name is not too long
-
 	fmt.Printf("Name: %s\n", gameJoinRequest.SnakeName)
 	fmt.Printf("Color: %s\n", gameJoinRequest.SnakeColor)
 
