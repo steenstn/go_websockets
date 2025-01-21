@@ -3,6 +3,9 @@
 Start server with `go build go_project`
 Join the game by going to `localhost:8080` or `<yourIpAddress>:8080` for others on the same network
 
+For ngrok:
+ngrok http https://localhost:8080
+
 Arrow keys to move
 R to respawn
 
