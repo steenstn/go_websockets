@@ -15,9 +15,6 @@ Bugs
 
 TODO
 - Wrap around?
- - For each point, store what direction to draw to get to the next point (x,y,direction)
-
-- Gamestate as binary array
 
 479 bytes per meddelande med json
 
@@ -77,13 +74,13 @@ type TextInfoMessage struct {
 var clients = make([]*Client, 20)
 
 func main() {
-	includeStuff()
+	includeStuff("client.html")
 	game.InitGame()
 	go gameLoop()
 
 	http.HandleFunc("/join", joinGame)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "client_out.html")
+		http.ServeFile(w, r, "out/client.html")
 	})
 
 	http.HandleFunc("/get-status", status)
@@ -94,7 +91,7 @@ func main() {
 	err := http.ListenAndServeTLS(":8080", "cert.pem", "key.pem", nil)
 	if err != nil {
 		println(":(")
-		println(err)
+		println(err.Error())
 	}
 }
 
@@ -165,6 +162,10 @@ func joinGame(responseWriter http.ResponseWriter, request *http.Request) {
 
 	gameJoinRequest := requests.GameJoinRequest{}
 	json.Unmarshal(msg, &gameJoinRequest)
+	gameJoinRequest.Validate()
+
+	// TODO: Validate the request.
+	// Check that color is hex and name is not too long
 
 	fmt.Printf("Name: %s\n", gameJoinRequest.SnakeName)
 	fmt.Printf("Color: %s\n", gameJoinRequest.SnakeColor)

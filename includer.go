@@ -8,15 +8,15 @@ import (
 	"strings"
 )
 
-func includeStuff() {
+func includeStuff(filename string) {
 
-	inputFile, err := os.Open("client.html")
+	inputFile, err := os.Open(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer inputFile.Close()
 
-	outputFile, err := os.Create("client_out.html")
+	outputFile, err := os.Create("out/" + filename)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -34,7 +34,6 @@ func includeStuff() {
 				log.Fatal(includeErr)
 				panic("Could not open " + filePath)
 			}
-			defer includeFile.Close()
 			includeScanner := bufio.NewScanner(includeFile)
 			for includeScanner.Scan() {
 				outputFile.WriteString(includeScanner.Text() + "\n")
