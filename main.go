@@ -62,6 +62,11 @@ type PlayerListEntry struct {
 	Score int
 }
 
+type GameSetupBinaryMessage struct {
+	LevelWidth  byte
+	LevelHeight byte
+}
+
 type GameSetupMessage struct {
 	LevelWidth  int
 	LevelHeight int
@@ -88,7 +93,7 @@ func main() {
 		http.ServeFile(w, r, "status.html")
 	})
 
-	err := http.ListenAndServeTLS(":8080", "cert.pem", "key.pem", nil)
+	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		println(":(")
 		println(err.Error())
@@ -254,7 +259,14 @@ func inputLoop(c *Client) {
 		//fmt.Printf("%s sent: %s\n", c.connection.RemoteAddr(), message)
 
 		var input = string(msg)
-		game.HandleInput(&c.player, input)
+
+		if input == "S" {
+			game.HandleInput(&c.player, input)
+		} else if c.player.InputQueue.PeekTail() != input && c.player.InputQueue.Peek() != input {
+			fmt.Printf("Input: %s\n", input)
+			c.player.InputQueue.Push(input)
+		} 
+		//game.HandleInput(&c.player, input)
 	}
 }
 

@@ -10,7 +10,7 @@ const messageVersion byte = 1
 0 - messageVersion
 1 - message type
 2 - Level width
-3 - Lebel height
+3 - Level height
 */
 func (message *GameSetupMessage) toByteArray() []byte {
 	byteArray := make([]byte, 4)

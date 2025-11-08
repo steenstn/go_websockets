@@ -118,7 +118,7 @@
         For ngrok, no port. For localhost, port
         */
         let portPart = hostUrl.includes("ngrok") ? "" : ":8080";
-        let target = "wss://" + hostUrl + portPart + "/" + endpoint
+        let target = "ws://" + hostUrl + portPart + "/" + endpoint
         socket = new WebSocket(target);
         socket.binaryType = "arraybuffer"
 

@@ -1,6 +1,7 @@
 package game
 
 import (
+	"go_project/queue"
 	"math/rand"
 )
 
@@ -21,13 +22,14 @@ type TopSnake struct {
 }
 
 type Player struct {
-	direction       Direction
-	wantedDirection Direction
+	Direction       Direction
+	WantedDirection Direction
 	snake           []TailSegment
 	alive           bool
 	TailLength      int
 	SnakeColor      string
 	Name            string
+	InputQueue		queue.Queue
 }
 
 type GameStateMessage struct {
@@ -56,9 +58,9 @@ type Direction byte
 
 const (
 	up    Direction = 0
-	left            = 1
-	down            = 2
-	right           = 3
+	left  Direction = 1
+	down  Direction = 2
+	right Direction = 3
 )
 
 var LevelWidth = 60
@@ -79,14 +81,14 @@ func InitGame() {
 }
 
 func HandleInput(player *Player, input string) {
-	if input == "U" && player.wantedDirection != down {
-		player.wantedDirection = up
-	} else if input == "L" && player.wantedDirection != right {
-		player.wantedDirection = left
-	} else if input == "D" && player.wantedDirection != up {
-		player.wantedDirection = down
-	} else if input == "R" && player.wantedDirection != left {
-		player.wantedDirection = right
+	if input == "U" && player.WantedDirection != down {
+		player.WantedDirection = up
+	} else if input == "L" && player.WantedDirection != right {
+		player.WantedDirection = left
+	} else if input == "D" && player.WantedDirection != up {
+		player.WantedDirection = down
+	} else if input == "R" && player.WantedDirection != left {
+		player.WantedDirection = right
 	} else if input == "S" {
 		if !player.alive {
 			spawnPlayer(player)
@@ -103,17 +105,29 @@ func Tick(players []*Player) GameStateMessage {
 		if players[i].alive == false {
 			continue
 		}
-		input := players[i].wantedDirection
-		if input == up && players[i].direction != down {
-			players[i].direction = up
-		} else if input == left && players[i].direction != right {
-			players[i].direction = left
-		} else if input == down && players[i].direction != up {
-			players[i].direction = down
-		} else if input == right && players[i].direction != left {
-			players[i].direction = right
+		//fmt.Printf("Direction: %d\nNext Item: %s\n", players[i].Direction, players[i].InputQueue.Peek())
+
+		HandleInput(players[i], players[i].InputQueue.Pop())
+
+		input := players[i].WantedDirection
+		if input == up && players[i].Direction != down {
+			players[i].Direction = up
+		} else if input == left && players[i].Direction != right {
+			players[i].Direction = left
+		} else if input == down && players[i].Direction != up {
+			players[i].Direction = down
+		} else if input == right && players[i].Direction != left {
+			players[i].Direction = right
 		}
-		moveSnake(&players[i].snake, players[i].TailLength, players[i].direction)
+		//fmt.Printf("Updated direction: %d\n", players[i].Direction)
+		
+		//direction := players[i].direction
+		//top := players[i].InputQueue.Peek()
+		//if direction == 0 && top == "U" || direction == 1 && top == "L" || direction == 2 && top == "D" || direction == 3 && top == "R"{
+			//println("lol")
+			//players[i].InputQueue.Pop()
+		//}
+		moveSnake(&players[i].snake, players[i].TailLength, players[i].Direction)
 
 		if hasCollidedWithAnotherSnake(players[i], players) {
 			players[i].alive = false
@@ -152,8 +166,8 @@ func Tick(players []*Player) GameStateMessage {
 
 func CreatePlayer(name string, color string) Player {
 	player := Player{
-		direction:       down,
-		wantedDirection: down,
+		Direction:       down,
+		WantedDirection: down,
 		snake:           make([]TailSegment, 255),
 		alive:           true,
 		TailLength:      3,
@@ -166,8 +180,9 @@ func CreatePlayer(name string, color string) Player {
 }
 
 func spawnPlayer(player *Player) {
-	player.direction = down
-	player.wantedDirection = down
+	player.InputQueue = queue.NewQueue(2)
+	player.Direction = down
+	player.WantedDirection = down
 	player.alive = true
 	player.TailLength = 3
 	player.snake[0].x = 20 + rand.Intn(LevelWidth-40)
