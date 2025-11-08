@@ -18,6 +18,12 @@ func TestQueue_PushAndPop(t *testing.T) {
 	assert.Equal(t, result, "third")
 }
 
+func TestQueue_PopEmpty(t *testing.T) {
+	queue := NewQueue(3)
+	result := queue.Pop()
+	assert.Equal(t, result, "")
+}
+
 func TestQueue_PushAndPopMore(t *testing.T) {
 	queue := NewQueue(3)
 	queue.Push("first")
@@ -64,4 +70,41 @@ func TestQueue_FullQueue(t *testing.T) {
 	assert.Equal(t, result, "third")
 	result = queue.Pop()
 	assert.Equal(t, result, "fourth")
+}
+
+func TestQueue_PeekHead(t *testing.T) {
+	queue := NewQueue(3)
+	queue.Push("first")
+	assert.Equal(t, "first", queue.Peek())
+
+	queue.Push("second")
+	assert.Equal(t, "first", queue.Peek())
+
+	queue.Push("third")
+	assert.Equal(t, "first", queue.Peek())
+}
+
+func TestQueue_PeekTail(t *testing.T) {
+	queue := NewQueue(3)
+	queue.Push("first")
+	assert.Equal(t, "first", queue.PeekTail())
+
+	queue.Push("second")
+	assert.Equal(t, "second", queue.PeekTail())
+
+	queue.Push("third")
+	assert.Equal(t, "third", queue.PeekTail())
+
+	queue.Push("fourth")
+	assert.Equal(t, "third", queue.PeekTail())
+}
+
+func TestQueue_PeekTailWithPopping(t *testing.T) {
+	queue := NewQueue(3)
+	queue.Push("A")
+	queue.Push("B")
+	queue.Push("C")
+	queue.Pop()
+	queue.Push("D")
+	assert.Equal(t, "D", queue.PeekTail())
 }

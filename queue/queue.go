@@ -27,7 +27,6 @@ func (q *Queue) Push(value string) {
 
 	q.numEntries++
 
-	println()
 }
 
 func (q *Queue) Pop() string {
@@ -47,6 +46,18 @@ func (q *Queue) Peek() string {
 		return ""
 	}
 	return q.entries[q.head]
+}
+
+func (q *Queue) PeekTail() string {
+	if q.numEntries <= 0 {
+		return ""
+	}
+	if q.tail-1 >= 0 {
+		return q.entries[q.tail-1]
+	} else {
+		return q.entries[q.numEntries-1]
+	}
+
 }
 
 func NewQueue(size int) Queue {
